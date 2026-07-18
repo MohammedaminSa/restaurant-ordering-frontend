@@ -1,142 +1,587 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
-import { z } from "zod";
-import { supabase } from "@/integrations/supabase/client";
-import { SiteHeader } from "@/components/site-header";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useState, useEffect } from "react";
 import { useCart, fmt } from "@/lib/cart";
-import { useAuth } from "@/lib/auth";
+import { placeOrder, createSession } from "@/lib/api";
 import { toast } from "sonner";
-import { Minus, Plus, Trash2, ShoppingBag } from "lucide-react";
+import { ShoppingBag, ArrowLeft, CheckCircle, Loader2, MapPin, User, Table as TableIcon, Trash2, Plus, Minus } from "lucide-react";
+import { SiteHeader } from "@/components/site-header";
 
 export const Route = createFileRoute("/cart")({
   component: CartPage,
 });
 
-const checkoutSchema = z.object({
-  customer_name: z.string().trim().min(2, "Name too short").max(80),
-  phone: z.string().trim().min(6, "Phone too short").max(30),
-  notes: z.string().trim().max(500).optional().default(""),
-});
-
 function CartPage() {
-  const { items, setQty, remove, total, clear } = useCart();
-  const { user, loading } = useAuth();
   const navigate = useNavigate();
-  const [form, setForm] = useState({ customer_name: "", phone: "", notes: "" });
+  const { items, count, total, clear, updateQuantity, remove } = useCart();
   const [submitting, setSubmitting] = useState(false);
+  const [orderInstructions, setOrderInstructions] = useState("");
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [showSuccessDialog, setShowSuccessDialog] = useState(false);
+  const [orderNumber, setOrderNumber] = useState<number | null>(null);
+  const [showCustomerForm, setShowCustomerForm] = useState(false);
+  const [pendingTableInfo, setPendingTableInfo] = useState<any>(null);
 
-  const placeOrder = async () => {
-    if (!user) { navigate({ to: "/auth" }); return; }
-    const parsed = checkoutSchema.safeParse(form);
-    if (!parsed.success) { toast.error(parsed.error.issues[0].message); return; }
-    if (items.length === 0) { toast.error("Your cart is empty"); return; }
+  const sessionToken = localStorage.getItem("sessionToken");
+  const sessionDataStr = localStorage.getItem("sessionData");
+  
+  // Initialize state with localStorage data on mount
+  const [currentSessionData, setCurrentSessionData] = useState<any>(() => {
+    return sessionDataStr ? JSON.parse(sessionDataStr) : null;
+  });
+  
+  // Use currentSessionData as sessionData
+  const sessionData = currentSessionData;
+
+  // Check if we have pending table info (scanned QR but no session yet)
+  useEffect(() => {
+    if (!sessionToken) {
+      const stored = localStorage.getItem("pendingTableInfo");
+      if (stored) {
+        setPendingTableInfo(JSON.parse(stored));
+        // Don't automatically show the form - wait for user to click "Start Order"
+      }
+    } else {
+      // Sync currentSessionData with localStorage when component mounts
+      const sessionDataStr = localStorage.getItem("sessionData");
+      if (sessionDataStr) {
+        setCurrentSessionData(JSON.parse(sessionDataStr));
+      }
+    }
+  }, [sessionToken]);
+
+  // Calculate tax and service charge
+  const restaurantInfo = sessionData || pendingTableInfo;
+  const taxRate = restaurantInfo?.tax_rate || 8.5;
+  const serviceChargeRate = restaurantInfo?.service_charge_rate || 10;
+  
+  const subtotal = total;
+  const tax = (subtotal * taxRate) / 100;
+  const serviceCharge = (subtotal * serviceChargeRate) / 100;
+  const grandTotal = subtotal + tax + serviceCharge;
+
+  const handleStartOrdering = () => {
+    if (items.length === 0) {
+      toast.error("Your cart is empty");
+      return;
+    }
+
+    // If no session, show customer form to create session
+    if (!sessionToken) {
+      if (!pendingTableInfo) {
+        toast.error("Please scan a QR code to start a session");
+        return;
+      }
+      setShowCustomerForm(true);
+      return;
+    }
+
+    // Session exists, show confirmation dialog to place order
+    setShowConfirmDialog(true);
+  };
+
+  const handleConfirmOrder = async () => {
+    setShowConfirmDialog(false);
+
+    if (!sessionToken) {
+      toast.error("Session not found");
+      return;
+    }
 
     setSubmitting(true);
     try {
-      const { data: order, error: orderErr } = await supabase
-        .from("orders")
-        .insert({ user_id: user.id, total, ...parsed.data })
-        .select("id")
-        .single();
-      if (orderErr || !order) throw orderErr ?? new Error("Failed to create order");
+      const orderItems = items.map((item) => ({
+        menu_item_id: item.menuItemId,
+        quantity: item.quantity,
+        selected_variants: item.selectedVariants.length > 0 ? item.selectedVariants : undefined,
+        special_instructions: item.specialInstructions,
+      }));
 
-      const { error: itemsErr } = await supabase.from("order_items").insert(
-        items.map((i) => ({
-          order_id: order.id, menu_item_id: i.id, item_name: i.name,
-          unit_price: i.price, quantity: i.quantity,
-        }))
-      );
-      if (itemsErr) throw itemsErr;
+      const response = await placeOrder({
+        session_token: sessionToken,
+        items: orderItems,
+        special_instructions: orderInstructions.trim() || undefined,
+      });
 
+      setOrderNumber(response.data.order_number);
+      setShowSuccessDialog(true);
       clear();
-      toast.success("Order placed! We're preparing it now.");
-      navigate({ to: "/orders" });
-    } catch (e) {
-      console.error(e);
-      toast.error("Couldn't place order. Please try again.");
+      setOrderInstructions("");
+    } catch (error: any) {
+      console.error("Failed to place order:", error);
+      toast.error(error.message || "Failed to place order");
     } finally {
       setSubmitting(false);
     }
   };
 
-  return (
-    <div className="min-h-screen">
-      <SiteHeader />
-      <div className="mx-auto max-w-4xl px-4 py-12">
-        <h1 className="font-serif text-4xl text-foreground">Your Order</h1>
+  const handleSuccessClose = () => {
+    setShowSuccessDialog(false);
+    navigate({ to: "/orders" });
+  };
 
-        {items.length === 0 ? (
-          <div className="mt-12 rounded-2xl border border-dashed border-border py-16 text-center">
-            <ShoppingBag className="mx-auto h-8 w-8 text-muted-foreground" />
-            <p className="mt-4 text-muted-foreground">Nothing in your cart yet.</p>
-            <Link to="/" className="mt-6 inline-block rounded-full bg-primary px-5 py-2 text-sm text-primary-foreground">
-              Browse the menu
-            </Link>
+  const handleSessionCreated = () => {
+    setShowCustomerForm(false);
+    setPendingTableInfo(null);
+    
+    // Reload session data from localStorage and merge with pending table info
+    const newSessionDataStr = localStorage.getItem("sessionData");
+    const newSessionToken = localStorage.getItem("sessionToken");
+    
+    if (newSessionDataStr && newSessionToken) {
+      const newSession = JSON.parse(newSessionDataStr);
+      
+      // If the session doesn't have table details, get them from pendingTableInfo
+      if (pendingTableInfo && !newSession.table_number) {
+        newSession.table_number = pendingTableInfo.table_number;
+        newSession.location = pendingTableInfo.location;
+        newSession.capacity = pendingTableInfo.capacity;
+        newSession.restaurant_name = pendingTableInfo.restaurant_name;
+        newSession.tax_rate = pendingTableInfo.tax_rate;
+        newSession.service_charge_rate = pendingTableInfo.service_charge_rate;
+        
+        // Save the enriched session data back to localStorage
+        localStorage.setItem("sessionData", JSON.stringify(newSession));
+      }
+      
+      setCurrentSessionData(newSession);
+      
+      // Session created successfully, now show confirmation to place order
+      toast.success("Session started! Confirm to place your order.");
+      
+      // Small delay to let user see the success message, then show confirm dialog
+      setTimeout(() => {
+        setShowConfirmDialog(true);
+      }, 1000);
+    }
+  };
+
+  // Show customer form if needed
+  if (showCustomerForm && pendingTableInfo) {
+    return (
+      <div className="min-h-screen bg-background">
+        <SiteHeader />
+        <div className="mx-auto max-w-2xl px-4 py-8">
+          <div className="rounded-xl border border-blue-200 bg-blue-50 p-4 mb-4">
+            <p className="text-sm text-blue-800">
+              Please provide your information to start ordering
+            </p>
           </div>
-        ) : (
-          <div className="mt-8 grid gap-8 lg:grid-cols-[1fr_360px]">
-            <ul className="space-y-3">
-              {items.map((i) => (
-                <li key={i.id} className="flex items-center gap-4 rounded-xl border border-border bg-card p-4">
-                  <div className="flex-1">
-                    <p className="font-serif text-lg text-card-foreground">{i.name}</p>
-                    <p className="text-sm text-muted-foreground">{fmt(i.price)} each</p>
-                  </div>
-                  <div className="flex items-center gap-2 rounded-full border border-border p-1">
-                    <button onClick={() => setQty(i.id, i.quantity - 1)} className="rounded-full p-1.5 hover:bg-secondary" aria-label="Decrease">
-                      <Minus className="h-3.5 w-3.5" />
-                    </button>
-                    <span className="w-6 text-center text-sm">{i.quantity}</span>
-                    <button onClick={() => setQty(i.id, i.quantity + 1)} className="rounded-full p-1.5 hover:bg-secondary" aria-label="Increase">
-                      <Plus className="h-3.5 w-3.5" />
-                    </button>
-                  </div>
-                  <div className="w-20 text-right font-serif text-lg text-foreground">{fmt(i.price * i.quantity)}</div>
-                  <button onClick={() => remove(i.id)} className="rounded-full p-2 text-muted-foreground hover:bg-secondary hover:text-destructive" aria-label="Remove">
-                    <Trash2 className="h-4 w-4" />
-                  </button>
-                </li>
-              ))}
-            </ul>
+          <CustomerInfoForm onSuccess={handleSessionCreated} onCancel={() => setShowCustomerForm(false)} />
+        </div>
+      </div>
+    );
+  }
 
-            <aside className="h-fit rounded-2xl border border-border bg-card p-6">
-              <h2 className="font-serif text-xl text-card-foreground">Checkout</h2>
-              <div className="mt-5 space-y-3">
-                <input
-                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
-                  placeholder="Your name" value={form.customer_name}
-                  onChange={(e) => setForm({ ...form, customer_name: e.target.value })}
-                  maxLength={80}
-                />
-                <input
-                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
-                  placeholder="Phone" value={form.phone}
-                  onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                  maxLength={30}
-                />
-                <textarea
-                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
-                  placeholder="Notes (allergies, preferences)" rows={3}
-                  value={form.notes}
-                  onChange={(e) => setForm({ ...form, notes: e.target.value })}
-                  maxLength={500}
-                />
+  // Redirect if cart is empty (but NOT if showing success dialog)
+  if (items.length === 0 && !showSuccessDialog) {
+    return (
+      <div className="min-h-screen bg-background">
+        <SiteHeader />
+        <div className="mx-auto max-w-2xl px-4 py-8">
+          <div className="rounded-xl border border-border bg-card p-12 text-center">
+            <ShoppingBag className="mx-auto h-20 w-20 text-muted-foreground mb-4" />
+            <h2 className="font-serif text-2xl text-foreground mb-2">Your cart is empty</h2>
+            <p className="text-muted-foreground mb-6">
+              Add items from the menu to place an order
+            </p>
+            <button
+              onClick={() => navigate({ to: "/" })}
+              className="inline-flex items-center rounded-lg bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
+            >
+              Browse Menu
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Redirect if no session AND no pending table info (but NOT if showing success dialog)
+  if (!sessionData && !pendingTableInfo && !showSuccessDialog) {
+    return (
+      <div className="min-h-screen bg-background">
+        <SiteHeader />
+        <div className="mx-auto max-w-2xl px-4 py-8">
+          <div className="rounded-xl border border-red-200 bg-red-50 p-4 mb-4">
+            <p className="text-sm text-red-800">
+              No active session found. Please scan a QR code to start a session.
+            </p>
+          </div>
+          <button
+            onClick={() => navigate({ to: "/" })}
+            className="rounded-lg bg-primary px-6 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
+          >
+            Go to Home
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-background">
+      <SiteHeader />
+
+      <div className="mx-auto max-w-3xl px-4 py-6">
+        {/* Header */}
+        <div className="flex items-center gap-3 mb-6">
+          <button
+            onClick={() => navigate({ to: "/" })}
+            className="inline-flex items-center gap-2 rounded-lg border border-border bg-background px-4 py-2 text-sm font-semibold text-foreground hover:bg-accent"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back to Menu
+          </button>
+          <h1 className="font-serif text-3xl font-bold text-foreground flex-1">Checkout</h1>
+        </div>
+
+        {/* Session Info */}
+        {sessionData && sessionData.table_number && (
+          <div className="rounded-xl border border-border bg-card p-6 mb-4">
+            <h2 className="font-semibold text-lg text-foreground mb-4">Dining Information</h2>
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <TableIcon className="h-4 w-4" />
+                  <span className="text-sm">Table</span>
+                </div>
+                <span className="font-semibold text-foreground">{sessionData.table_number}</span>
               </div>
-              <div className="mt-6 flex items-center justify-between border-t border-border pt-4">
-                <span className="text-sm text-muted-foreground">Total</span>
-                <span className="font-serif text-2xl text-foreground">{fmt(total)}</span>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <User className="h-4 w-4" />
+                  <span className="text-sm">Customer</span>
+                </div>
+                <span className="font-semibold text-foreground">{sessionData.customer_name}</span>
               </div>
-              <button
-                onClick={placeOrder}
-                disabled={submitting || loading}
-                className="mt-5 w-full rounded-full bg-primary px-5 py-3 text-sm font-medium text-primary-foreground transition-transform hover:scale-[1.02] disabled:opacity-60"
-              >
-                {submitting ? "Placing order…" : user ? "Place order" : "Sign in to order"}
-              </button>
-            </aside>
+              {sessionData.location && (
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <MapPin className="h-4 w-4" />
+                    <span className="text-sm">Location</span>
+                  </div>
+                  <span className="font-semibold text-foreground">{sessionData.location}</span>
+                </div>
+              )}
+            </div>
           </div>
         )}
+
+        {/* Order Summary */}
+        <div className="rounded-xl border border-border bg-card p-6 mb-4">
+          <h2 className="font-semibold text-lg text-foreground mb-4">
+            Order Summary ({count} {count === 1 ? 'item' : 'items'})
+          </h2>
+          <div className="space-y-3">
+            {items.map((item) => (
+              <div key={item.id} className="rounded-lg border border-border bg-background p-3 sm:p-4 hover:shadow-md transition-shadow">
+                <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+                  {/* Item Info */}
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-semibold text-foreground text-sm sm:text-base">{item.name}</h3>
+                    <p className="text-sm text-muted-foreground mt-1">{fmt(item.price)} each</p>
+                    
+                    {/* Variants */}
+                    {item.selectedVariants && item.selectedVariants.length > 0 && (
+                      <div className="flex flex-wrap gap-1 mt-2">
+                        {item.selectedVariants.map((variant: any, index: number) => (
+                          <span
+                            key={index}
+                            className="inline-flex items-center rounded-full border border-border bg-muted px-2 py-0.5 text-xs text-muted-foreground"
+                          >
+                            {variant.variant_name}: {variant.option_name}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                    
+                    {/* Special Instructions */}
+                    {item.specialInstructions && (
+                      <p className="text-xs italic text-muted-foreground mt-2 bg-muted px-2 py-1 rounded">
+                        Note: {item.specialInstructions}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Price and Controls */}
+                  <div className="flex flex-row sm:flex-col items-center sm:items-end justify-between sm:justify-between gap-3 sm:gap-0">
+                    <p className="font-serif text-lg font-semibold text-foreground">{fmt(item.itemTotal)}</p>
+                    
+                    {/* Quantity Controls */}
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => {
+                          if (item.quantity > 1) {
+                            updateQuantity(item.id, item.quantity - 1);
+                          } else {
+                            remove(item.id);
+                            toast.success("Item removed from cart");
+                          }
+                        }}
+                        className="flex items-center justify-center rounded-full border border-border bg-background h-9 w-9 hover:bg-accent hover:text-accent-foreground transition-colors"
+                        aria-label="Decrease quantity"
+                      >
+                        <Minus className="h-4 w-4" />
+                      </button>
+                      
+                      <span className="w-8 text-center text-sm font-semibold">{item.quantity}</span>
+                      
+                      <button
+                        onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                        className="flex items-center justify-center rounded-full border border-border bg-background h-9 w-9 hover:bg-accent hover:text-accent-foreground transition-colors"
+                        aria-label="Increase quantity"
+                      >
+                        <Plus className="h-4 w-4" />
+                      </button>
+                      
+                      <button
+                        onClick={() => {
+                          remove(item.id);
+                          toast.success("Item removed from cart");
+                        }}
+                        className="flex items-center justify-center rounded-full border border-destructive/20 bg-destructive/10 h-9 w-9 text-destructive hover:bg-destructive hover:text-destructive-foreground transition-colors"
+                        aria-label="Remove item"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Order Instructions */}
+        <div className="rounded-xl border border-border bg-card p-6 mb-4">
+          <h2 className="font-semibold text-lg text-foreground mb-3">
+            Special Instructions (Optional)
+          </h2>
+          <textarea
+            value={orderInstructions}
+            onChange={(e) => setOrderInstructions(e.target.value)}
+            rows={3}
+            className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring resize-none"
+            placeholder="Any special requests for your order? (e.g., allergies, preferences)"
+          />
+        </div>
+
+        {/* Price Breakdown */}
+        <div className="rounded-xl border border-border bg-card p-6 mb-4">
+          <h2 className="font-semibold text-lg text-foreground mb-4">Payment Summary</h2>
+          <div className="space-y-3">
+            <div className="flex justify-between">
+              <span className="text-foreground">Subtotal</span>
+              <span className="font-semibold">{fmt(subtotal)}</span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">Tax ({taxRate}%)</span>
+              <span className="text-muted-foreground">{fmt(tax)}</span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">Service Charge ({serviceChargeRate}%)</span>
+              <span className="text-muted-foreground">{fmt(serviceCharge)}</span>
+            </div>
+            <div className="border-t border-border pt-3">
+              <div className="flex justify-between">
+                <span className="text-xl font-bold text-foreground">Total</span>
+                <span className="text-xl font-bold text-primary">{fmt(grandTotal)}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Place Order / Start Order Button */}
+        <button
+          onClick={handleStartOrdering}
+          disabled={submitting}
+          className="w-full rounded-lg bg-primary px-6 py-4 text-lg font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {submitting ? (
+            <span className="flex items-center justify-center gap-2">
+              <Loader2 className="h-5 w-5 animate-spin" />
+              Processing...
+            </span>
+          ) : sessionToken ? (
+            "Place Order"
+          ) : (
+            "Start Order"
+          )}
+        </button>
+        
+        {!sessionToken && pendingTableInfo && (
+          <p className="mt-3 text-center text-sm text-muted-foreground">
+            You'll provide your information before starting your order
+          </p>
+        )}
       </div>
+
+      {/* Confirm Dialog */}
+      {showConfirmDialog && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-background rounded-xl border border-border p-6 max-w-md w-full mx-4">
+            <h2 className="text-xl font-bold text-foreground mb-2">Confirm Your Order</h2>
+            <p className="text-foreground mb-2">Are you sure you want to place this order?</p>
+            <p className="text-sm text-muted-foreground mb-6">
+              {count} {count === 1 ? 'item' : 'items'} • Total: {fmt(grandTotal)}
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowConfirmDialog(false)}
+                className="flex-1 rounded-lg border border-border bg-background px-4 py-2 font-semibold text-foreground hover:bg-accent"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmOrder}
+                className="flex-1 rounded-lg bg-primary px-4 py-2 font-semibold text-primary-foreground hover:bg-primary/90"
+              >
+                Confirm Order
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Success Dialog */}
+      {showSuccessDialog && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-background rounded-xl border border-border p-8 max-w-md w-full mx-4 text-center">
+            <CheckCircle className="mx-auto h-20 w-20 text-green-500 mb-4" />
+            <h2 className="text-2xl font-bold text-foreground mb-2">Order Placed Successfully!</h2>
+            <p className="text-muted-foreground mb-2">Your order number is</p>
+            <p className="text-4xl font-bold text-primary mb-2">#{orderNumber}</p>
+            <p className="text-sm text-muted-foreground mb-6">
+              We'll notify you when your order is ready
+            </p>
+            <button
+              onClick={handleSuccessClose}
+              className="w-full rounded-lg bg-primary px-6 py-3 text-lg font-semibold text-primary-foreground hover:bg-primary/90"
+            >
+              Track My Order
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+interface CustomerInfoFormProps {
+  onSuccess: () => void;
+  onCancel: () => void;
+}
+
+function CustomerInfoForm({ onSuccess, onCancel }: CustomerInfoFormProps) {
+  const [customerName, setCustomerName] = useState("");
+  const [customerPhone, setCustomerPhone] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const pendingTableInfoStr = localStorage.getItem("pendingTableInfo");
+    if (!pendingTableInfoStr) return;
+
+    setSubmitting(true);
+    try {
+      const tableInfo = JSON.parse(pendingTableInfoStr);
+      
+      const response = await createSession({
+        table_id: tableInfo.id,
+        customer_name: customerName.trim(),
+        customer_phone: customerPhone.trim() || undefined,
+      });
+
+      const sessionData = response.data;
+      
+      // Enrich session data with table information
+      const enrichedSessionData = {
+        ...sessionData,
+        table_number: tableInfo.table_number,
+        location: tableInfo.location,
+        capacity: tableInfo.capacity,
+        restaurant_name: tableInfo.restaurant_name,
+        restaurant_logo: tableInfo.restaurant_logo,
+        tax_rate: tableInfo.tax_rate,
+        service_charge_rate: tableInfo.service_charge_rate,
+        currency: tableInfo.currency || 'USD',
+        orders: [],
+      };
+      
+      localStorage.setItem("sessionToken", sessionData.session_token);
+      localStorage.setItem("sessionData", JSON.stringify(enrichedSessionData));
+      localStorage.removeItem("pendingTableInfo");
+
+      toast.success("Order session started!");
+      onSuccess();
+    } catch (error: any) {
+      console.error("Failed to create session:", error);
+      toast.error(error.message || "Failed to start session");
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="rounded-xl border border-border bg-card p-6">
+      <h2 className="font-serif text-2xl font-bold text-foreground mb-2">Start Your Order</h2>
+      <p className="text-sm text-muted-foreground mb-6">
+        Please provide your information to begin ordering
+      </p>
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <label htmlFor="name" className="block text-sm font-medium text-foreground mb-2">
+            Your Name *
+          </label>
+          <input
+            id="name"
+            type="text"
+            value={customerName}
+            onChange={(e) => setCustomerName(e.target.value)}
+            required
+            className="w-full rounded-lg border border-input bg-background px-4 py-2 text-foreground focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring"
+            placeholder="Enter your name"
+          />
+        </div>
+
+        <div>
+          <label htmlFor="phone" className="block text-sm font-medium text-foreground mb-2">
+            Phone Number (Optional)
+          </label>
+          <input
+            id="phone"
+            type="tel"
+            value={customerPhone}
+            onChange={(e) => setCustomerPhone(e.target.value)}
+            className="w-full rounded-lg border border-input bg-background px-4 py-2 text-foreground focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring"
+            placeholder="Enter your phone number"
+          />
+        </div>
+
+        <div className="flex gap-3 pt-2">
+          <button
+            type="button"
+            onClick={onCancel}
+            disabled={submitting}
+            className="flex-1 rounded-lg border border-border bg-background px-6 py-3 text-sm font-semibold text-foreground hover:bg-accent disabled:opacity-50"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            disabled={submitting || !customerName.trim()}
+            className="flex-1 rounded-lg bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {submitting ? (
+              <span className="flex items-center justify-center gap-2">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Creating...
+              </span>
+            ) : (
+              "Start Ordering"
+            )}
+          </button>
+        </div>
+      </form>
     </div>
   );
 }

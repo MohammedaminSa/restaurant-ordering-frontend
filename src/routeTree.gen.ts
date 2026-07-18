@@ -10,14 +10,55 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as OrdersRouteImport } from './routes/orders'
+import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as CartRouteImport } from './routes/cart'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as DashboardIndexRouteImport } from './routes/dashboard.index'
+import { Route as ScanQrCodeRouteImport } from './routes/scan.$qrCode'
 import { Route as ItemIdRouteImport } from './routes/item.$id'
+import { Route as DashboardWaiterRouteImport } from './routes/dashboard.waiter'
+import { Route as DashboardSettingsRouteImport } from './routes/dashboard.settings'
+import { Route as DashboardKitchenRouteImport } from './routes/dashboard.kitchen'
+import { Route as DashboardCashierRouteImport } from './routes/dashboard.cashier'
+import { Route as DashboardAdminRouteImport } from './routes/dashboard.admin'
+import { Route as DashboardWaiterIndexRouteImport } from './routes/dashboard.waiter.index'
+import { Route as DashboardKitchenIndexRouteImport } from './routes/dashboard.kitchen.index'
+import { Route as DashboardCashierIndexRouteImport } from './routes/dashboard.cashier.index'
+import { Route as DashboardAdminIndexRouteImport } from './routes/dashboard.admin.index'
+import { Route as DashboardWaiterTablesRouteImport } from './routes/dashboard.waiter.tables'
+import { Route as DashboardWaiterSettingsRouteImport } from './routes/dashboard.waiter.settings'
+import { Route as DashboardWaiterOrdersRouteImport } from './routes/dashboard.waiter.orders'
+import { Route as DashboardWaiterNotificationsRouteImport } from './routes/dashboard.waiter.notifications'
+import { Route as DashboardKitchenSettingsRouteImport } from './routes/dashboard.kitchen.settings'
+import { Route as DashboardKitchenOrdersRouteImport } from './routes/dashboard.kitchen.orders'
+import { Route as DashboardKitchenNotificationsRouteImport } from './routes/dashboard.kitchen.notifications'
+import { Route as DashboardKitchenMenuRouteImport } from './routes/dashboard.kitchen.menu'
+import { Route as DashboardCashierTransactionsRouteImport } from './routes/dashboard.cashier.transactions'
+import { Route as DashboardCashierTablesRouteImport } from './routes/dashboard.cashier.tables'
+import { Route as DashboardCashierSettingsRouteImport } from './routes/dashboard.cashier.settings'
+import { Route as DashboardCashierReportsRouteImport } from './routes/dashboard.cashier.reports'
+import { Route as DashboardCashierOrdersRouteImport } from './routes/dashboard.cashier.orders'
+import { Route as DashboardCashierCheckoutRouteImport } from './routes/dashboard.cashier.checkout'
+import { Route as DashboardAdminWaitersRouteImport } from './routes/dashboard.admin.waiters'
+import { Route as DashboardAdminUsersRouteImport } from './routes/dashboard.admin.users'
+import { Route as DashboardAdminTablesRouteImport } from './routes/dashboard.admin.tables'
+import { Route as DashboardAdminSettingsRouteImport } from './routes/dashboard.admin.settings'
+import { Route as DashboardAdminRestaurantsRouteImport } from './routes/dashboard.admin.restaurants'
+import { Route as DashboardAdminReportsRouteImport } from './routes/dashboard.admin.reports'
+import { Route as DashboardAdminOrdersRouteImport } from './routes/dashboard.admin.orders'
+import { Route as DashboardAdminMenuItemsRouteImport } from './routes/dashboard.admin.menu-items'
+import { Route as DashboardAdminKitchenRouteImport } from './routes/dashboard.admin.kitchen'
+import { Route as DashboardAdminCashiersRouteImport } from './routes/dashboard.admin.cashiers'
 
 const OrdersRoute = OrdersRouteImport.update({
   id: '/orders',
   path: '/orders',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DashboardRoute = DashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CartRoute = CartRouteImport.update({
@@ -35,48 +76,454 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DashboardIndexRoute = DashboardIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const ScanQrCodeRoute = ScanQrCodeRouteImport.update({
+  id: '/scan/$qrCode',
+  path: '/scan/$qrCode',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ItemIdRoute = ItemIdRouteImport.update({
   id: '/item/$id',
   path: '/item/$id',
   getParentRoute: () => rootRouteImport,
+} as any)
+const DashboardWaiterRoute = DashboardWaiterRouteImport.update({
+  id: '/waiter',
+  path: '/waiter',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardSettingsRoute = DashboardSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardKitchenRoute = DashboardKitchenRouteImport.update({
+  id: '/kitchen',
+  path: '/kitchen',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardCashierRoute = DashboardCashierRouteImport.update({
+  id: '/cashier',
+  path: '/cashier',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardAdminRoute = DashboardAdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardWaiterIndexRoute = DashboardWaiterIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => DashboardWaiterRoute,
+} as any)
+const DashboardKitchenIndexRoute = DashboardKitchenIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => DashboardKitchenRoute,
+} as any)
+const DashboardCashierIndexRoute = DashboardCashierIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => DashboardCashierRoute,
+} as any)
+const DashboardAdminIndexRoute = DashboardAdminIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => DashboardAdminRoute,
+} as any)
+const DashboardWaiterTablesRoute = DashboardWaiterTablesRouteImport.update({
+  id: '/tables',
+  path: '/tables',
+  getParentRoute: () => DashboardWaiterRoute,
+} as any)
+const DashboardWaiterSettingsRoute = DashboardWaiterSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => DashboardWaiterRoute,
+} as any)
+const DashboardWaiterOrdersRoute = DashboardWaiterOrdersRouteImport.update({
+  id: '/orders',
+  path: '/orders',
+  getParentRoute: () => DashboardWaiterRoute,
+} as any)
+const DashboardWaiterNotificationsRoute =
+  DashboardWaiterNotificationsRouteImport.update({
+    id: '/notifications',
+    path: '/notifications',
+    getParentRoute: () => DashboardWaiterRoute,
+  } as any)
+const DashboardKitchenSettingsRoute =
+  DashboardKitchenSettingsRouteImport.update({
+    id: '/settings',
+    path: '/settings',
+    getParentRoute: () => DashboardKitchenRoute,
+  } as any)
+const DashboardKitchenOrdersRoute = DashboardKitchenOrdersRouteImport.update({
+  id: '/orders',
+  path: '/orders',
+  getParentRoute: () => DashboardKitchenRoute,
+} as any)
+const DashboardKitchenNotificationsRoute =
+  DashboardKitchenNotificationsRouteImport.update({
+    id: '/notifications',
+    path: '/notifications',
+    getParentRoute: () => DashboardKitchenRoute,
+  } as any)
+const DashboardKitchenMenuRoute = DashboardKitchenMenuRouteImport.update({
+  id: '/menu',
+  path: '/menu',
+  getParentRoute: () => DashboardKitchenRoute,
+} as any)
+const DashboardCashierTransactionsRoute =
+  DashboardCashierTransactionsRouteImport.update({
+    id: '/transactions',
+    path: '/transactions',
+    getParentRoute: () => DashboardCashierRoute,
+  } as any)
+const DashboardCashierTablesRoute = DashboardCashierTablesRouteImport.update({
+  id: '/tables',
+  path: '/tables',
+  getParentRoute: () => DashboardCashierRoute,
+} as any)
+const DashboardCashierSettingsRoute =
+  DashboardCashierSettingsRouteImport.update({
+    id: '/settings',
+    path: '/settings',
+    getParentRoute: () => DashboardCashierRoute,
+  } as any)
+const DashboardCashierReportsRoute = DashboardCashierReportsRouteImport.update({
+  id: '/reports',
+  path: '/reports',
+  getParentRoute: () => DashboardCashierRoute,
+} as any)
+const DashboardCashierOrdersRoute = DashboardCashierOrdersRouteImport.update({
+  id: '/orders',
+  path: '/orders',
+  getParentRoute: () => DashboardCashierRoute,
+} as any)
+const DashboardCashierCheckoutRoute =
+  DashboardCashierCheckoutRouteImport.update({
+    id: '/checkout',
+    path: '/checkout',
+    getParentRoute: () => DashboardCashierRoute,
+  } as any)
+const DashboardAdminWaitersRoute = DashboardAdminWaitersRouteImport.update({
+  id: '/waiters',
+  path: '/waiters',
+  getParentRoute: () => DashboardAdminRoute,
+} as any)
+const DashboardAdminUsersRoute = DashboardAdminUsersRouteImport.update({
+  id: '/users',
+  path: '/users',
+  getParentRoute: () => DashboardAdminRoute,
+} as any)
+const DashboardAdminTablesRoute = DashboardAdminTablesRouteImport.update({
+  id: '/tables',
+  path: '/tables',
+  getParentRoute: () => DashboardAdminRoute,
+} as any)
+const DashboardAdminSettingsRoute = DashboardAdminSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => DashboardAdminRoute,
+} as any)
+const DashboardAdminRestaurantsRoute =
+  DashboardAdminRestaurantsRouteImport.update({
+    id: '/restaurants',
+    path: '/restaurants',
+    getParentRoute: () => DashboardAdminRoute,
+  } as any)
+const DashboardAdminReportsRoute = DashboardAdminReportsRouteImport.update({
+  id: '/reports',
+  path: '/reports',
+  getParentRoute: () => DashboardAdminRoute,
+} as any)
+const DashboardAdminOrdersRoute = DashboardAdminOrdersRouteImport.update({
+  id: '/orders',
+  path: '/orders',
+  getParentRoute: () => DashboardAdminRoute,
+} as any)
+const DashboardAdminMenuItemsRoute = DashboardAdminMenuItemsRouteImport.update({
+  id: '/menu-items',
+  path: '/menu-items',
+  getParentRoute: () => DashboardAdminRoute,
+} as any)
+const DashboardAdminKitchenRoute = DashboardAdminKitchenRouteImport.update({
+  id: '/kitchen',
+  path: '/kitchen',
+  getParentRoute: () => DashboardAdminRoute,
+} as any)
+const DashboardAdminCashiersRoute = DashboardAdminCashiersRouteImport.update({
+  id: '/cashiers',
+  path: '/cashiers',
+  getParentRoute: () => DashboardAdminRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/cart': typeof CartRoute
+  '/dashboard': typeof DashboardRouteWithChildren
   '/orders': typeof OrdersRoute
+  '/dashboard/admin': typeof DashboardAdminRouteWithChildren
+  '/dashboard/cashier': typeof DashboardCashierRouteWithChildren
+  '/dashboard/kitchen': typeof DashboardKitchenRouteWithChildren
+  '/dashboard/settings': typeof DashboardSettingsRoute
+  '/dashboard/waiter': typeof DashboardWaiterRouteWithChildren
   '/item/$id': typeof ItemIdRoute
+  '/scan/$qrCode': typeof ScanQrCodeRoute
+  '/dashboard/': typeof DashboardIndexRoute
+  '/dashboard/admin/cashiers': typeof DashboardAdminCashiersRoute
+  '/dashboard/admin/kitchen': typeof DashboardAdminKitchenRoute
+  '/dashboard/admin/menu-items': typeof DashboardAdminMenuItemsRoute
+  '/dashboard/admin/orders': typeof DashboardAdminOrdersRoute
+  '/dashboard/admin/reports': typeof DashboardAdminReportsRoute
+  '/dashboard/admin/restaurants': typeof DashboardAdminRestaurantsRoute
+  '/dashboard/admin/settings': typeof DashboardAdminSettingsRoute
+  '/dashboard/admin/tables': typeof DashboardAdminTablesRoute
+  '/dashboard/admin/users': typeof DashboardAdminUsersRoute
+  '/dashboard/admin/waiters': typeof DashboardAdminWaitersRoute
+  '/dashboard/cashier/checkout': typeof DashboardCashierCheckoutRoute
+  '/dashboard/cashier/orders': typeof DashboardCashierOrdersRoute
+  '/dashboard/cashier/reports': typeof DashboardCashierReportsRoute
+  '/dashboard/cashier/settings': typeof DashboardCashierSettingsRoute
+  '/dashboard/cashier/tables': typeof DashboardCashierTablesRoute
+  '/dashboard/cashier/transactions': typeof DashboardCashierTransactionsRoute
+  '/dashboard/kitchen/menu': typeof DashboardKitchenMenuRoute
+  '/dashboard/kitchen/notifications': typeof DashboardKitchenNotificationsRoute
+  '/dashboard/kitchen/orders': typeof DashboardKitchenOrdersRoute
+  '/dashboard/kitchen/settings': typeof DashboardKitchenSettingsRoute
+  '/dashboard/waiter/notifications': typeof DashboardWaiterNotificationsRoute
+  '/dashboard/waiter/orders': typeof DashboardWaiterOrdersRoute
+  '/dashboard/waiter/settings': typeof DashboardWaiterSettingsRoute
+  '/dashboard/waiter/tables': typeof DashboardWaiterTablesRoute
+  '/dashboard/admin/': typeof DashboardAdminIndexRoute
+  '/dashboard/cashier/': typeof DashboardCashierIndexRoute
+  '/dashboard/kitchen/': typeof DashboardKitchenIndexRoute
+  '/dashboard/waiter/': typeof DashboardWaiterIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/cart': typeof CartRoute
   '/orders': typeof OrdersRoute
+  '/dashboard/settings': typeof DashboardSettingsRoute
   '/item/$id': typeof ItemIdRoute
+  '/scan/$qrCode': typeof ScanQrCodeRoute
+  '/dashboard': typeof DashboardIndexRoute
+  '/dashboard/admin/cashiers': typeof DashboardAdminCashiersRoute
+  '/dashboard/admin/kitchen': typeof DashboardAdminKitchenRoute
+  '/dashboard/admin/menu-items': typeof DashboardAdminMenuItemsRoute
+  '/dashboard/admin/orders': typeof DashboardAdminOrdersRoute
+  '/dashboard/admin/reports': typeof DashboardAdminReportsRoute
+  '/dashboard/admin/restaurants': typeof DashboardAdminRestaurantsRoute
+  '/dashboard/admin/settings': typeof DashboardAdminSettingsRoute
+  '/dashboard/admin/tables': typeof DashboardAdminTablesRoute
+  '/dashboard/admin/users': typeof DashboardAdminUsersRoute
+  '/dashboard/admin/waiters': typeof DashboardAdminWaitersRoute
+  '/dashboard/cashier/checkout': typeof DashboardCashierCheckoutRoute
+  '/dashboard/cashier/orders': typeof DashboardCashierOrdersRoute
+  '/dashboard/cashier/reports': typeof DashboardCashierReportsRoute
+  '/dashboard/cashier/settings': typeof DashboardCashierSettingsRoute
+  '/dashboard/cashier/tables': typeof DashboardCashierTablesRoute
+  '/dashboard/cashier/transactions': typeof DashboardCashierTransactionsRoute
+  '/dashboard/kitchen/menu': typeof DashboardKitchenMenuRoute
+  '/dashboard/kitchen/notifications': typeof DashboardKitchenNotificationsRoute
+  '/dashboard/kitchen/orders': typeof DashboardKitchenOrdersRoute
+  '/dashboard/kitchen/settings': typeof DashboardKitchenSettingsRoute
+  '/dashboard/waiter/notifications': typeof DashboardWaiterNotificationsRoute
+  '/dashboard/waiter/orders': typeof DashboardWaiterOrdersRoute
+  '/dashboard/waiter/settings': typeof DashboardWaiterSettingsRoute
+  '/dashboard/waiter/tables': typeof DashboardWaiterTablesRoute
+  '/dashboard/admin': typeof DashboardAdminIndexRoute
+  '/dashboard/cashier': typeof DashboardCashierIndexRoute
+  '/dashboard/kitchen': typeof DashboardKitchenIndexRoute
+  '/dashboard/waiter': typeof DashboardWaiterIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/cart': typeof CartRoute
+  '/dashboard': typeof DashboardRouteWithChildren
   '/orders': typeof OrdersRoute
+  '/dashboard/admin': typeof DashboardAdminRouteWithChildren
+  '/dashboard/cashier': typeof DashboardCashierRouteWithChildren
+  '/dashboard/kitchen': typeof DashboardKitchenRouteWithChildren
+  '/dashboard/settings': typeof DashboardSettingsRoute
+  '/dashboard/waiter': typeof DashboardWaiterRouteWithChildren
   '/item/$id': typeof ItemIdRoute
+  '/scan/$qrCode': typeof ScanQrCodeRoute
+  '/dashboard/': typeof DashboardIndexRoute
+  '/dashboard/admin/cashiers': typeof DashboardAdminCashiersRoute
+  '/dashboard/admin/kitchen': typeof DashboardAdminKitchenRoute
+  '/dashboard/admin/menu-items': typeof DashboardAdminMenuItemsRoute
+  '/dashboard/admin/orders': typeof DashboardAdminOrdersRoute
+  '/dashboard/admin/reports': typeof DashboardAdminReportsRoute
+  '/dashboard/admin/restaurants': typeof DashboardAdminRestaurantsRoute
+  '/dashboard/admin/settings': typeof DashboardAdminSettingsRoute
+  '/dashboard/admin/tables': typeof DashboardAdminTablesRoute
+  '/dashboard/admin/users': typeof DashboardAdminUsersRoute
+  '/dashboard/admin/waiters': typeof DashboardAdminWaitersRoute
+  '/dashboard/cashier/checkout': typeof DashboardCashierCheckoutRoute
+  '/dashboard/cashier/orders': typeof DashboardCashierOrdersRoute
+  '/dashboard/cashier/reports': typeof DashboardCashierReportsRoute
+  '/dashboard/cashier/settings': typeof DashboardCashierSettingsRoute
+  '/dashboard/cashier/tables': typeof DashboardCashierTablesRoute
+  '/dashboard/cashier/transactions': typeof DashboardCashierTransactionsRoute
+  '/dashboard/kitchen/menu': typeof DashboardKitchenMenuRoute
+  '/dashboard/kitchen/notifications': typeof DashboardKitchenNotificationsRoute
+  '/dashboard/kitchen/orders': typeof DashboardKitchenOrdersRoute
+  '/dashboard/kitchen/settings': typeof DashboardKitchenSettingsRoute
+  '/dashboard/waiter/notifications': typeof DashboardWaiterNotificationsRoute
+  '/dashboard/waiter/orders': typeof DashboardWaiterOrdersRoute
+  '/dashboard/waiter/settings': typeof DashboardWaiterSettingsRoute
+  '/dashboard/waiter/tables': typeof DashboardWaiterTablesRoute
+  '/dashboard/admin/': typeof DashboardAdminIndexRoute
+  '/dashboard/cashier/': typeof DashboardCashierIndexRoute
+  '/dashboard/kitchen/': typeof DashboardKitchenIndexRoute
+  '/dashboard/waiter/': typeof DashboardWaiterIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/auth' | '/cart' | '/orders' | '/item/$id'
+  fullPaths:
+    | '/'
+    | '/auth'
+    | '/cart'
+    | '/dashboard'
+    | '/orders'
+    | '/dashboard/admin'
+    | '/dashboard/cashier'
+    | '/dashboard/kitchen'
+    | '/dashboard/settings'
+    | '/dashboard/waiter'
+    | '/item/$id'
+    | '/scan/$qrCode'
+    | '/dashboard/'
+    | '/dashboard/admin/cashiers'
+    | '/dashboard/admin/kitchen'
+    | '/dashboard/admin/menu-items'
+    | '/dashboard/admin/orders'
+    | '/dashboard/admin/reports'
+    | '/dashboard/admin/restaurants'
+    | '/dashboard/admin/settings'
+    | '/dashboard/admin/tables'
+    | '/dashboard/admin/users'
+    | '/dashboard/admin/waiters'
+    | '/dashboard/cashier/checkout'
+    | '/dashboard/cashier/orders'
+    | '/dashboard/cashier/reports'
+    | '/dashboard/cashier/settings'
+    | '/dashboard/cashier/tables'
+    | '/dashboard/cashier/transactions'
+    | '/dashboard/kitchen/menu'
+    | '/dashboard/kitchen/notifications'
+    | '/dashboard/kitchen/orders'
+    | '/dashboard/kitchen/settings'
+    | '/dashboard/waiter/notifications'
+    | '/dashboard/waiter/orders'
+    | '/dashboard/waiter/settings'
+    | '/dashboard/waiter/tables'
+    | '/dashboard/admin/'
+    | '/dashboard/cashier/'
+    | '/dashboard/kitchen/'
+    | '/dashboard/waiter/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth' | '/cart' | '/orders' | '/item/$id'
-  id: '__root__' | '/' | '/auth' | '/cart' | '/orders' | '/item/$id'
+  to:
+    | '/'
+    | '/auth'
+    | '/cart'
+    | '/orders'
+    | '/dashboard/settings'
+    | '/item/$id'
+    | '/scan/$qrCode'
+    | '/dashboard'
+    | '/dashboard/admin/cashiers'
+    | '/dashboard/admin/kitchen'
+    | '/dashboard/admin/menu-items'
+    | '/dashboard/admin/orders'
+    | '/dashboard/admin/reports'
+    | '/dashboard/admin/restaurants'
+    | '/dashboard/admin/settings'
+    | '/dashboard/admin/tables'
+    | '/dashboard/admin/users'
+    | '/dashboard/admin/waiters'
+    | '/dashboard/cashier/checkout'
+    | '/dashboard/cashier/orders'
+    | '/dashboard/cashier/reports'
+    | '/dashboard/cashier/settings'
+    | '/dashboard/cashier/tables'
+    | '/dashboard/cashier/transactions'
+    | '/dashboard/kitchen/menu'
+    | '/dashboard/kitchen/notifications'
+    | '/dashboard/kitchen/orders'
+    | '/dashboard/kitchen/settings'
+    | '/dashboard/waiter/notifications'
+    | '/dashboard/waiter/orders'
+    | '/dashboard/waiter/settings'
+    | '/dashboard/waiter/tables'
+    | '/dashboard/admin'
+    | '/dashboard/cashier'
+    | '/dashboard/kitchen'
+    | '/dashboard/waiter'
+  id:
+    | '__root__'
+    | '/'
+    | '/auth'
+    | '/cart'
+    | '/dashboard'
+    | '/orders'
+    | '/dashboard/admin'
+    | '/dashboard/cashier'
+    | '/dashboard/kitchen'
+    | '/dashboard/settings'
+    | '/dashboard/waiter'
+    | '/item/$id'
+    | '/scan/$qrCode'
+    | '/dashboard/'
+    | '/dashboard/admin/cashiers'
+    | '/dashboard/admin/kitchen'
+    | '/dashboard/admin/menu-items'
+    | '/dashboard/admin/orders'
+    | '/dashboard/admin/reports'
+    | '/dashboard/admin/restaurants'
+    | '/dashboard/admin/settings'
+    | '/dashboard/admin/tables'
+    | '/dashboard/admin/users'
+    | '/dashboard/admin/waiters'
+    | '/dashboard/cashier/checkout'
+    | '/dashboard/cashier/orders'
+    | '/dashboard/cashier/reports'
+    | '/dashboard/cashier/settings'
+    | '/dashboard/cashier/tables'
+    | '/dashboard/cashier/transactions'
+    | '/dashboard/kitchen/menu'
+    | '/dashboard/kitchen/notifications'
+    | '/dashboard/kitchen/orders'
+    | '/dashboard/kitchen/settings'
+    | '/dashboard/waiter/notifications'
+    | '/dashboard/waiter/orders'
+    | '/dashboard/waiter/settings'
+    | '/dashboard/waiter/tables'
+    | '/dashboard/admin/'
+    | '/dashboard/cashier/'
+    | '/dashboard/kitchen/'
+    | '/dashboard/waiter/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthRoute: typeof AuthRoute
   CartRoute: typeof CartRoute
+  DashboardRoute: typeof DashboardRouteWithChildren
   OrdersRoute: typeof OrdersRoute
   ItemIdRoute: typeof ItemIdRoute
+  ScanQrCodeRoute: typeof ScanQrCodeRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -86,6 +533,13 @@ declare module '@tanstack/react-router' {
       path: '/orders'
       fullPath: '/orders'
       preLoaderRoute: typeof OrdersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dashboard': {
+      id: '/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof DashboardRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/cart': {
@@ -109,6 +563,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/dashboard/': {
+      id: '/dashboard/'
+      path: '/'
+      fullPath: '/dashboard/'
+      preLoaderRoute: typeof DashboardIndexRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/scan/$qrCode': {
+      id: '/scan/$qrCode'
+      path: '/scan/$qrCode'
+      fullPath: '/scan/$qrCode'
+      preLoaderRoute: typeof ScanQrCodeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/item/$id': {
       id: '/item/$id'
       path: '/item/$id'
@@ -116,15 +584,364 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ItemIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/dashboard/waiter': {
+      id: '/dashboard/waiter'
+      path: '/waiter'
+      fullPath: '/dashboard/waiter'
+      preLoaderRoute: typeof DashboardWaiterRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/settings': {
+      id: '/dashboard/settings'
+      path: '/settings'
+      fullPath: '/dashboard/settings'
+      preLoaderRoute: typeof DashboardSettingsRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/kitchen': {
+      id: '/dashboard/kitchen'
+      path: '/kitchen'
+      fullPath: '/dashboard/kitchen'
+      preLoaderRoute: typeof DashboardKitchenRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/cashier': {
+      id: '/dashboard/cashier'
+      path: '/cashier'
+      fullPath: '/dashboard/cashier'
+      preLoaderRoute: typeof DashboardCashierRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/admin': {
+      id: '/dashboard/admin'
+      path: '/admin'
+      fullPath: '/dashboard/admin'
+      preLoaderRoute: typeof DashboardAdminRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/waiter/': {
+      id: '/dashboard/waiter/'
+      path: '/'
+      fullPath: '/dashboard/waiter/'
+      preLoaderRoute: typeof DashboardWaiterIndexRouteImport
+      parentRoute: typeof DashboardWaiterRoute
+    }
+    '/dashboard/kitchen/': {
+      id: '/dashboard/kitchen/'
+      path: '/'
+      fullPath: '/dashboard/kitchen/'
+      preLoaderRoute: typeof DashboardKitchenIndexRouteImport
+      parentRoute: typeof DashboardKitchenRoute
+    }
+    '/dashboard/cashier/': {
+      id: '/dashboard/cashier/'
+      path: '/'
+      fullPath: '/dashboard/cashier/'
+      preLoaderRoute: typeof DashboardCashierIndexRouteImport
+      parentRoute: typeof DashboardCashierRoute
+    }
+    '/dashboard/admin/': {
+      id: '/dashboard/admin/'
+      path: '/'
+      fullPath: '/dashboard/admin/'
+      preLoaderRoute: typeof DashboardAdminIndexRouteImport
+      parentRoute: typeof DashboardAdminRoute
+    }
+    '/dashboard/waiter/tables': {
+      id: '/dashboard/waiter/tables'
+      path: '/tables'
+      fullPath: '/dashboard/waiter/tables'
+      preLoaderRoute: typeof DashboardWaiterTablesRouteImport
+      parentRoute: typeof DashboardWaiterRoute
+    }
+    '/dashboard/waiter/settings': {
+      id: '/dashboard/waiter/settings'
+      path: '/settings'
+      fullPath: '/dashboard/waiter/settings'
+      preLoaderRoute: typeof DashboardWaiterSettingsRouteImport
+      parentRoute: typeof DashboardWaiterRoute
+    }
+    '/dashboard/waiter/orders': {
+      id: '/dashboard/waiter/orders'
+      path: '/orders'
+      fullPath: '/dashboard/waiter/orders'
+      preLoaderRoute: typeof DashboardWaiterOrdersRouteImport
+      parentRoute: typeof DashboardWaiterRoute
+    }
+    '/dashboard/waiter/notifications': {
+      id: '/dashboard/waiter/notifications'
+      path: '/notifications'
+      fullPath: '/dashboard/waiter/notifications'
+      preLoaderRoute: typeof DashboardWaiterNotificationsRouteImport
+      parentRoute: typeof DashboardWaiterRoute
+    }
+    '/dashboard/kitchen/settings': {
+      id: '/dashboard/kitchen/settings'
+      path: '/settings'
+      fullPath: '/dashboard/kitchen/settings'
+      preLoaderRoute: typeof DashboardKitchenSettingsRouteImport
+      parentRoute: typeof DashboardKitchenRoute
+    }
+    '/dashboard/kitchen/orders': {
+      id: '/dashboard/kitchen/orders'
+      path: '/orders'
+      fullPath: '/dashboard/kitchen/orders'
+      preLoaderRoute: typeof DashboardKitchenOrdersRouteImport
+      parentRoute: typeof DashboardKitchenRoute
+    }
+    '/dashboard/kitchen/notifications': {
+      id: '/dashboard/kitchen/notifications'
+      path: '/notifications'
+      fullPath: '/dashboard/kitchen/notifications'
+      preLoaderRoute: typeof DashboardKitchenNotificationsRouteImport
+      parentRoute: typeof DashboardKitchenRoute
+    }
+    '/dashboard/kitchen/menu': {
+      id: '/dashboard/kitchen/menu'
+      path: '/menu'
+      fullPath: '/dashboard/kitchen/menu'
+      preLoaderRoute: typeof DashboardKitchenMenuRouteImport
+      parentRoute: typeof DashboardKitchenRoute
+    }
+    '/dashboard/cashier/transactions': {
+      id: '/dashboard/cashier/transactions'
+      path: '/transactions'
+      fullPath: '/dashboard/cashier/transactions'
+      preLoaderRoute: typeof DashboardCashierTransactionsRouteImport
+      parentRoute: typeof DashboardCashierRoute
+    }
+    '/dashboard/cashier/tables': {
+      id: '/dashboard/cashier/tables'
+      path: '/tables'
+      fullPath: '/dashboard/cashier/tables'
+      preLoaderRoute: typeof DashboardCashierTablesRouteImport
+      parentRoute: typeof DashboardCashierRoute
+    }
+    '/dashboard/cashier/settings': {
+      id: '/dashboard/cashier/settings'
+      path: '/settings'
+      fullPath: '/dashboard/cashier/settings'
+      preLoaderRoute: typeof DashboardCashierSettingsRouteImport
+      parentRoute: typeof DashboardCashierRoute
+    }
+    '/dashboard/cashier/reports': {
+      id: '/dashboard/cashier/reports'
+      path: '/reports'
+      fullPath: '/dashboard/cashier/reports'
+      preLoaderRoute: typeof DashboardCashierReportsRouteImport
+      parentRoute: typeof DashboardCashierRoute
+    }
+    '/dashboard/cashier/orders': {
+      id: '/dashboard/cashier/orders'
+      path: '/orders'
+      fullPath: '/dashboard/cashier/orders'
+      preLoaderRoute: typeof DashboardCashierOrdersRouteImport
+      parentRoute: typeof DashboardCashierRoute
+    }
+    '/dashboard/cashier/checkout': {
+      id: '/dashboard/cashier/checkout'
+      path: '/checkout'
+      fullPath: '/dashboard/cashier/checkout'
+      preLoaderRoute: typeof DashboardCashierCheckoutRouteImport
+      parentRoute: typeof DashboardCashierRoute
+    }
+    '/dashboard/admin/waiters': {
+      id: '/dashboard/admin/waiters'
+      path: '/waiters'
+      fullPath: '/dashboard/admin/waiters'
+      preLoaderRoute: typeof DashboardAdminWaitersRouteImport
+      parentRoute: typeof DashboardAdminRoute
+    }
+    '/dashboard/admin/users': {
+      id: '/dashboard/admin/users'
+      path: '/users'
+      fullPath: '/dashboard/admin/users'
+      preLoaderRoute: typeof DashboardAdminUsersRouteImport
+      parentRoute: typeof DashboardAdminRoute
+    }
+    '/dashboard/admin/tables': {
+      id: '/dashboard/admin/tables'
+      path: '/tables'
+      fullPath: '/dashboard/admin/tables'
+      preLoaderRoute: typeof DashboardAdminTablesRouteImport
+      parentRoute: typeof DashboardAdminRoute
+    }
+    '/dashboard/admin/settings': {
+      id: '/dashboard/admin/settings'
+      path: '/settings'
+      fullPath: '/dashboard/admin/settings'
+      preLoaderRoute: typeof DashboardAdminSettingsRouteImport
+      parentRoute: typeof DashboardAdminRoute
+    }
+    '/dashboard/admin/restaurants': {
+      id: '/dashboard/admin/restaurants'
+      path: '/restaurants'
+      fullPath: '/dashboard/admin/restaurants'
+      preLoaderRoute: typeof DashboardAdminRestaurantsRouteImport
+      parentRoute: typeof DashboardAdminRoute
+    }
+    '/dashboard/admin/reports': {
+      id: '/dashboard/admin/reports'
+      path: '/reports'
+      fullPath: '/dashboard/admin/reports'
+      preLoaderRoute: typeof DashboardAdminReportsRouteImport
+      parentRoute: typeof DashboardAdminRoute
+    }
+    '/dashboard/admin/orders': {
+      id: '/dashboard/admin/orders'
+      path: '/orders'
+      fullPath: '/dashboard/admin/orders'
+      preLoaderRoute: typeof DashboardAdminOrdersRouteImport
+      parentRoute: typeof DashboardAdminRoute
+    }
+    '/dashboard/admin/menu-items': {
+      id: '/dashboard/admin/menu-items'
+      path: '/menu-items'
+      fullPath: '/dashboard/admin/menu-items'
+      preLoaderRoute: typeof DashboardAdminMenuItemsRouteImport
+      parentRoute: typeof DashboardAdminRoute
+    }
+    '/dashboard/admin/kitchen': {
+      id: '/dashboard/admin/kitchen'
+      path: '/kitchen'
+      fullPath: '/dashboard/admin/kitchen'
+      preLoaderRoute: typeof DashboardAdminKitchenRouteImport
+      parentRoute: typeof DashboardAdminRoute
+    }
+    '/dashboard/admin/cashiers': {
+      id: '/dashboard/admin/cashiers'
+      path: '/cashiers'
+      fullPath: '/dashboard/admin/cashiers'
+      preLoaderRoute: typeof DashboardAdminCashiersRouteImport
+      parentRoute: typeof DashboardAdminRoute
+    }
   }
 }
+
+interface DashboardAdminRouteChildren {
+  DashboardAdminCashiersRoute: typeof DashboardAdminCashiersRoute
+  DashboardAdminKitchenRoute: typeof DashboardAdminKitchenRoute
+  DashboardAdminMenuItemsRoute: typeof DashboardAdminMenuItemsRoute
+  DashboardAdminOrdersRoute: typeof DashboardAdminOrdersRoute
+  DashboardAdminReportsRoute: typeof DashboardAdminReportsRoute
+  DashboardAdminRestaurantsRoute: typeof DashboardAdminRestaurantsRoute
+  DashboardAdminSettingsRoute: typeof DashboardAdminSettingsRoute
+  DashboardAdminTablesRoute: typeof DashboardAdminTablesRoute
+  DashboardAdminUsersRoute: typeof DashboardAdminUsersRoute
+  DashboardAdminWaitersRoute: typeof DashboardAdminWaitersRoute
+  DashboardAdminIndexRoute: typeof DashboardAdminIndexRoute
+}
+
+const DashboardAdminRouteChildren: DashboardAdminRouteChildren = {
+  DashboardAdminCashiersRoute: DashboardAdminCashiersRoute,
+  DashboardAdminKitchenRoute: DashboardAdminKitchenRoute,
+  DashboardAdminMenuItemsRoute: DashboardAdminMenuItemsRoute,
+  DashboardAdminOrdersRoute: DashboardAdminOrdersRoute,
+  DashboardAdminReportsRoute: DashboardAdminReportsRoute,
+  DashboardAdminRestaurantsRoute: DashboardAdminRestaurantsRoute,
+  DashboardAdminSettingsRoute: DashboardAdminSettingsRoute,
+  DashboardAdminTablesRoute: DashboardAdminTablesRoute,
+  DashboardAdminUsersRoute: DashboardAdminUsersRoute,
+  DashboardAdminWaitersRoute: DashboardAdminWaitersRoute,
+  DashboardAdminIndexRoute: DashboardAdminIndexRoute,
+}
+
+const DashboardAdminRouteWithChildren = DashboardAdminRoute._addFileChildren(
+  DashboardAdminRouteChildren,
+)
+
+interface DashboardCashierRouteChildren {
+  DashboardCashierCheckoutRoute: typeof DashboardCashierCheckoutRoute
+  DashboardCashierOrdersRoute: typeof DashboardCashierOrdersRoute
+  DashboardCashierReportsRoute: typeof DashboardCashierReportsRoute
+  DashboardCashierSettingsRoute: typeof DashboardCashierSettingsRoute
+  DashboardCashierTablesRoute: typeof DashboardCashierTablesRoute
+  DashboardCashierTransactionsRoute: typeof DashboardCashierTransactionsRoute
+  DashboardCashierIndexRoute: typeof DashboardCashierIndexRoute
+}
+
+const DashboardCashierRouteChildren: DashboardCashierRouteChildren = {
+  DashboardCashierCheckoutRoute: DashboardCashierCheckoutRoute,
+  DashboardCashierOrdersRoute: DashboardCashierOrdersRoute,
+  DashboardCashierReportsRoute: DashboardCashierReportsRoute,
+  DashboardCashierSettingsRoute: DashboardCashierSettingsRoute,
+  DashboardCashierTablesRoute: DashboardCashierTablesRoute,
+  DashboardCashierTransactionsRoute: DashboardCashierTransactionsRoute,
+  DashboardCashierIndexRoute: DashboardCashierIndexRoute,
+}
+
+const DashboardCashierRouteWithChildren =
+  DashboardCashierRoute._addFileChildren(DashboardCashierRouteChildren)
+
+interface DashboardKitchenRouteChildren {
+  DashboardKitchenMenuRoute: typeof DashboardKitchenMenuRoute
+  DashboardKitchenNotificationsRoute: typeof DashboardKitchenNotificationsRoute
+  DashboardKitchenOrdersRoute: typeof DashboardKitchenOrdersRoute
+  DashboardKitchenSettingsRoute: typeof DashboardKitchenSettingsRoute
+  DashboardKitchenIndexRoute: typeof DashboardKitchenIndexRoute
+}
+
+const DashboardKitchenRouteChildren: DashboardKitchenRouteChildren = {
+  DashboardKitchenMenuRoute: DashboardKitchenMenuRoute,
+  DashboardKitchenNotificationsRoute: DashboardKitchenNotificationsRoute,
+  DashboardKitchenOrdersRoute: DashboardKitchenOrdersRoute,
+  DashboardKitchenSettingsRoute: DashboardKitchenSettingsRoute,
+  DashboardKitchenIndexRoute: DashboardKitchenIndexRoute,
+}
+
+const DashboardKitchenRouteWithChildren =
+  DashboardKitchenRoute._addFileChildren(DashboardKitchenRouteChildren)
+
+interface DashboardWaiterRouteChildren {
+  DashboardWaiterNotificationsRoute: typeof DashboardWaiterNotificationsRoute
+  DashboardWaiterOrdersRoute: typeof DashboardWaiterOrdersRoute
+  DashboardWaiterSettingsRoute: typeof DashboardWaiterSettingsRoute
+  DashboardWaiterTablesRoute: typeof DashboardWaiterTablesRoute
+  DashboardWaiterIndexRoute: typeof DashboardWaiterIndexRoute
+}
+
+const DashboardWaiterRouteChildren: DashboardWaiterRouteChildren = {
+  DashboardWaiterNotificationsRoute: DashboardWaiterNotificationsRoute,
+  DashboardWaiterOrdersRoute: DashboardWaiterOrdersRoute,
+  DashboardWaiterSettingsRoute: DashboardWaiterSettingsRoute,
+  DashboardWaiterTablesRoute: DashboardWaiterTablesRoute,
+  DashboardWaiterIndexRoute: DashboardWaiterIndexRoute,
+}
+
+const DashboardWaiterRouteWithChildren = DashboardWaiterRoute._addFileChildren(
+  DashboardWaiterRouteChildren,
+)
+
+interface DashboardRouteChildren {
+  DashboardAdminRoute: typeof DashboardAdminRouteWithChildren
+  DashboardCashierRoute: typeof DashboardCashierRouteWithChildren
+  DashboardKitchenRoute: typeof DashboardKitchenRouteWithChildren
+  DashboardSettingsRoute: typeof DashboardSettingsRoute
+  DashboardWaiterRoute: typeof DashboardWaiterRouteWithChildren
+  DashboardIndexRoute: typeof DashboardIndexRoute
+}
+
+const DashboardRouteChildren: DashboardRouteChildren = {
+  DashboardAdminRoute: DashboardAdminRouteWithChildren,
+  DashboardCashierRoute: DashboardCashierRouteWithChildren,
+  DashboardKitchenRoute: DashboardKitchenRouteWithChildren,
+  DashboardSettingsRoute: DashboardSettingsRoute,
+  DashboardWaiterRoute: DashboardWaiterRouteWithChildren,
+  DashboardIndexRoute: DashboardIndexRoute,
+}
+
+const DashboardRouteWithChildren = DashboardRoute._addFileChildren(
+  DashboardRouteChildren,
+)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthRoute: AuthRoute,
   CartRoute: CartRoute,
+  DashboardRoute: DashboardRouteWithChildren,
   OrdersRoute: OrdersRoute,
   ItemIdRoute: ItemIdRoute,
+  ScanQrCodeRoute: ScanQrCodeRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
