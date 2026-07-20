@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate, Outlet } from "@tanstack/react-router";
 import { useAuthStore } from "@/lib/auth-store";
-import { ROLE_LABELS, type User } from "@/lib/api";
+import { getRestaurantInfo, ROLE_LABELS, type User } from "@/lib/api";
 import {
   LayoutDashboard,
   ChefHat,
@@ -85,6 +85,11 @@ function DashboardLayout() {
   const { user, isAuthenticated, logout } = useAuthStore();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [restaurantName, setRestaurantName] = useState("Restaurant");
+
+  useEffect(() => {
+    getRestaurantInfo().then(r => setRestaurantName(r.data?.name || 'Restaurant')).catch(() => {});
+  }, []);
 
   useEffect(() => {
     if (!isAuthenticated || !user) {
@@ -118,7 +123,7 @@ function DashboardLayout() {
     <>
       <div className="flex h-16 shrink-0 items-center gap-2 border-b border-white/15 px-4 lg:px-6">
         <UtensilsCrossed className="h-5 w-5 text-white" />
-        <span className="font-serif text-lg text-white">Olivera</span>
+        <span className="font-serif text-lg text-white">{restaurantName}</span>
       </div>
 
       <div className="flex shrink-0 flex-col items-center gap-3 border-b border-white/15 px-4 py-4 lg:px-6 lg:py-6">

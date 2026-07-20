@@ -924,4 +924,20 @@ export const updateUserPassword = async (userId: string, newPassword: string): P
   return response.data;
 };
 
+export interface RestaurantInfo {
+  id: string;
+  name: string;
+  slug: string;
+  description?: string;
+  logo_url?: string;
+  currency: string;
+  tax_rate: number;
+  service_charge_rate: number;
+}
+
+export const getRestaurantInfo = async (): Promise<ApiResponse<RestaurantInfo>> => {
+  const response = await api.get('/restaurants/public/info');
+  return response.data;
+};
+
 export default api;

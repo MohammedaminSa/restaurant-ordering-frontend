@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
-import { getCategories, getMenuItems, type Category, type MenuItem } from "@/lib/api";
+import { getCategories, getMenuItems, getRestaurantInfo, type Category, type MenuItem } from "@/lib/api";
 import { SiteHeader } from "@/components/site-header";
 import { useCart, fmt } from "@/lib/cart";
 import { toast } from "sonner";
@@ -25,6 +25,7 @@ async function loadMenu() {
 
 function Menu() {
   const { data, isLoading } = useQuery({ queryKey: ["menu"], queryFn: loadMenu });
+  const { data: restaurant } = useQuery({ queryKey: ["restaurant-info"], queryFn: getRestaurantInfo });
   const [active, setActive] = useState<string | null>(null);
   const { add } = useCart();
   const sessionToken = localStorage.getItem("sessionToken");
@@ -34,6 +35,7 @@ function Menu() {
   const categories = data?.categories ?? [];
   const menuItems = data?.items ?? [];
   const shown = active ? menuItems.filter((i) => i.category_id === active) : menuItems;
+  const restaurantName = restaurant?.data?.name || 'Restaurant';
 
   const handleAddToCart = (item: MenuItem) => {
     // Simply add to cart - no need to check session here
@@ -57,7 +59,7 @@ function Menu() {
       )}
 
       <section className="relative overflow-hidden border-b border-border/60">
-        <img src={heroImg} alt="Olivera dining room" width={1600} height={1024}
+        <img src={heroImg} alt={`${restaurantName} dining room`} width={1600} height={1024}
           className="absolute inset-0 h-full w-full object-cover opacity-60" />
         <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
         <div className="relative mx-auto max-w-6xl px-4 py-16 sm:py-24 md:py-32">
@@ -140,7 +142,7 @@ function Menu() {
       </section>
 
       <footer className="border-t border-border/60 py-8 text-center text-xs text-muted-foreground">
-        © Olivera Bistro · 24 Rue de la Vigne · Open 5pm–11pm
+        © {restaurantName} · Open daily
       </footer>
     </div>
   );

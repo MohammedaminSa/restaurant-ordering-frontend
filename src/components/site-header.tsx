@@ -2,7 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { ShoppingBag, UtensilsCrossed, LayoutDashboard, LogOut, UserIcon, ChevronDown, Menu, X } from "lucide-react";
 import { useCart } from "@/lib/cart";
 import { useAuthStore } from "@/lib/auth-store";
-import { ROLE_LABELS, ROLE_DASHBOARD, type User } from "@/lib/api";
+import { ROLE_LABELS, ROLE_DASHBOARD, getRestaurantInfo, type User, type RestaurantInfo } from "@/lib/api";
 import { toast } from "sonner";
 import { useState, useRef, useEffect } from "react";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -12,7 +12,12 @@ export function SiteHeader() {
   const { user, isAuthenticated, logout } = useAuthStore();
   const [menuOpen, setMenuOpen] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [restaurant, setRestaurant] = useState<RestaurantInfo | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    getRestaurantInfo().then(r => setRestaurant(r.data)).catch(() => {});
+  }, []);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -31,12 +36,18 @@ export function SiteHeader() {
     setMobileNavOpen(false);
   };
 
+  const displayName = restaurant?.name || 'Restaurant';
+
   return (
     <header className="sticky top-0 z-40 border-b border-border/60 bg-background/85 backdrop-blur">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4">
         <Link to="/" className="flex items-center gap-2 text-foreground shrink-0">
-          <UtensilsCrossed className="h-5 w-5 text-accent" />
-          <span className="font-serif text-xl">Olivera</span>
+          {restaurant?.logo_url ? (
+            <img src={restaurant.logo_url} alt={displayName} className="h-8 w-8 rounded-full object-cover" />
+          ) : (
+            <UtensilsCrossed className="h-5 w-5 text-accent" />
+          )}
+          <span className="font-serif text-xl">{displayName}</span>
         </Link>
 
         {/* Desktop nav */}

@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import {
   UtensilsCrossed,
@@ -9,7 +9,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { useAuthStore } from "@/lib/auth-store";
-import { ROLE_DASHBOARD, ROLE_LABELS, type User } from "@/lib/api";
+import { getRestaurantInfo, ROLE_DASHBOARD, ROLE_LABELS, type User } from "@/lib/api";
 
 export const Route = createFileRoute("/auth")({
   component: AuthPage,
@@ -25,6 +25,11 @@ function AuthPage() {
   const [busy, setBusy] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [restaurantName, setRestaurantName] = useState("Restaurant");
+
+  useEffect(() => {
+    getRestaurantInfo().then(r => setRestaurantName(r.data?.name || 'Restaurant')).catch(() => {});
+  }, []);
 
   // If already authenticated, redirect to dashboard
   if (isAuthenticated && user) {
@@ -66,7 +71,7 @@ function AuthPage() {
           className="mb-6 flex items-center justify-center gap-2 text-accent"
         >
           <UtensilsCrossed className="h-5 w-5" />
-          <span className="font-serif text-xl text-foreground">Olivera</span>
+          <span className="font-serif text-xl text-foreground">{restaurantName}</span>
         </Link>
 
         <h1 className="text-center font-serif text-2xl text-card-foreground">
