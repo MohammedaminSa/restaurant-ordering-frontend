@@ -2,7 +2,15 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { type ReactNode } from 'react';
 
-export const fmt = (n: number) => `$${n.toFixed(2)}`;
+export const CURRENCY_SYMBOLS: Record<string, string> = {
+  USD: '$', EUR: '€', GBP: '£', ETB: 'Br', NGN: '₦', KES: 'KSh',
+  JPY: '¥', CNY: '¥', INR: '₹', BRL: 'R$', AUD: 'A$', CAD: 'C$',
+};
+
+export const fmt = (n: number, currency?: string) => {
+  const sym = currency ? CURRENCY_SYMBOLS[currency] || currency + ' ' : '$';
+  return `${sym}${n.toFixed(2)}`;
+};
 
 export interface CartItemVariant {
   variant_id: string;

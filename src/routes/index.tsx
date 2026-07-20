@@ -36,6 +36,7 @@ function Menu() {
   const menuItems = data?.items ?? [];
   const shown = active ? menuItems.filter((i) => i.category_id === active) : menuItems;
   const restaurantName = restaurant?.data?.name || 'Restaurant';
+  const currency = restaurant?.data?.currency;
 
   const handleAddToCart = (item: MenuItem) => {
     // Simply add to cart - no need to check session here
@@ -119,7 +120,7 @@ function Menu() {
                   <Link to="/item/$id" params={{ id: item.id }} className="flex-1">
                     <div className="flex items-start justify-between gap-4">
                       <h3 className="font-serif text-xl text-card-foreground group-hover:text-accent">{item.name}</h3>
-                      <span className="whitespace-nowrap font-serif text-lg text-accent">{fmt(Number(item.base_price))}</span>
+                      <span className="whitespace-nowrap font-serif text-lg text-accent">{fmt(Number(item.base_price), currency)}</span>
                     </div>
                     <p className="mt-2 text-sm leading-relaxed text-muted-foreground line-clamp-3">{item.description}</p>
                     {item.preparation_time && (

@@ -24,6 +24,7 @@ function AdminRestaurants() {
     address: "",
     phone: "",
     email: "",
+    logo_url: "",
     currency: "USD",
     tax_rate: "0",
     service_charge_rate: "0",
@@ -79,7 +80,7 @@ function AdminRestaurants() {
   });
 
   const resetForm = () => setForm({
-    name: "", description: "", address: "", phone: "", email: "",
+    name: "", description: "", address: "", phone: "", email: "", logo_url: "",
     currency: "USD", tax_rate: "0", service_charge_rate: "0",
   });
 
@@ -97,6 +98,7 @@ function AdminRestaurants() {
       address: r.address || "",
       phone: r.phone || "",
       email: r.email || "",
+      logo_url: r.logo_url || "",
       currency: r.currency || "USD",
       tax_rate: String(r.tax_rate || 0),
       service_charge_rate: String(r.service_charge_rate || 0),
@@ -112,6 +114,7 @@ function AdminRestaurants() {
       address: form.address || undefined,
       phone: form.phone || undefined,
       email: form.email || undefined,
+      logo_url: form.logo_url || undefined,
       currency: form.currency,
       tax_rate: parseFloat(form.tax_rate) || 0,
       service_charge_rate: parseFloat(form.service_charge_rate) || 0,
@@ -286,6 +289,10 @@ function AdminRestaurants() {
               <div>
                 <label className="block text-sm font-medium text-foreground mb-1">Email</label>
                 <input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder-muted-foreground/60 focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-1">Logo URL</label>
+                <input type="url" value={form.logo_url} onChange={(e) => setForm({ ...form, logo_url: e.target.value })} placeholder="https://example.com/logo.png" className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder-muted-foreground/60 focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring" />
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>

@@ -53,6 +53,7 @@ function CartPage() {
   const restaurantInfo = sessionData || pendingTableInfo;
   const taxRate = restaurantInfo?.tax_rate || 8.5;
   const serviceChargeRate = restaurantInfo?.service_charge_rate || 10;
+  const currency = restaurantInfo?.currency;
   
   const subtotal = total;
   const tax = (subtotal * taxRate) / 100;
@@ -279,7 +280,7 @@ function CartPage() {
                   {/* Item Info */}
                   <div className="flex-1 min-w-0">
                     <h3 className="font-semibold text-foreground text-sm sm:text-base">{item.name}</h3>
-                    <p className="text-sm text-muted-foreground mt-1">{fmt(item.price)} each</p>
+                    <p className="text-sm text-muted-foreground mt-1">{fmt(item.price, currency)} each</p>
                     
                     {/* Variants */}
                     {item.selectedVariants && item.selectedVariants.length > 0 && (
@@ -305,7 +306,7 @@ function CartPage() {
 
                   {/* Price and Controls */}
                   <div className="flex flex-row sm:flex-col items-center sm:items-end justify-between sm:justify-between gap-3 sm:gap-0">
-                    <p className="font-serif text-lg font-semibold text-foreground">{fmt(item.itemTotal)}</p>
+                    <p className="font-serif text-lg font-semibold text-foreground">{fmt(item.itemTotal, currency)}</p>
                     
                     {/* Quantity Controls */}
                     <div className="flex items-center gap-2">
@@ -372,20 +373,20 @@ function CartPage() {
           <div className="space-y-3">
             <div className="flex justify-between">
               <span className="text-foreground">Subtotal</span>
-              <span className="font-semibold">{fmt(subtotal)}</span>
+              <span className="font-semibold">{fmt(subtotal, currency)}</span>
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Tax ({taxRate}%)</span>
-              <span className="text-muted-foreground">{fmt(tax)}</span>
+              <span className="text-muted-foreground">{fmt(tax, currency)}</span>
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Service Charge ({serviceChargeRate}%)</span>
-              <span className="text-muted-foreground">{fmt(serviceCharge)}</span>
+              <span className="text-muted-foreground">{fmt(serviceCharge, currency)}</span>
             </div>
             <div className="border-t border-border pt-3">
               <div className="flex justify-between">
                 <span className="text-xl font-bold text-foreground">Total</span>
-                <span className="text-xl font-bold text-primary">{fmt(grandTotal)}</span>
+                <span className="text-xl font-bold text-primary">{fmt(grandTotal, currency)}</span>
               </div>
             </div>
           </div>
@@ -423,7 +424,7 @@ function CartPage() {
             <h2 className="text-xl font-bold text-foreground mb-2">Confirm Your Order</h2>
             <p className="text-foreground mb-2">Are you sure you want to place this order?</p>
             <p className="text-sm text-muted-foreground mb-6">
-              {count} {count === 1 ? 'item' : 'items'} • Total: {fmt(grandTotal)}
+              {count} {count === 1 ? 'item' : 'items'} • Total: {fmt(grandTotal, currency)}
             </p>
             <div className="flex gap-3">
               <button

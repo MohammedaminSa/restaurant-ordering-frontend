@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { getMenuItemById } from "@/lib/api";
+import { getMenuItemById, getRestaurantInfo } from "@/lib/api";
 import { SiteHeader } from "@/components/site-header";
 import { useCart, fmt } from "@/lib/cart";
 import { toast } from "sonner";
@@ -24,7 +24,13 @@ function ItemDetail() {
     queryFn: () => getMenuItemById(id),
   });
 
+  const { data: restaurant } = useQuery({
+    queryKey: ["restaurant-info"],
+    queryFn: getRestaurantInfo,
+  });
+
   const menuItem = data?.data;
+  const currency = restaurant?.data?.currency;
 
   const handleAddToCart = () => {
     if (!menuItem) return;
@@ -93,7 +99,7 @@ function ItemDetail() {
                 {/* Title and Price */}
                 <div className="mt-4 flex items-start justify-between gap-4 flex-wrap">
                   <h1 className="font-serif text-2xl sm:text-3xl lg:text-4xl text-foreground">{menuItem.name}</h1>
-                  <span className="whitespace-nowrap font-serif text-2xl sm:text-3xl text-primary">{fmt(Number(menuItem.base_price))}</span>
+                  <span className="whitespace-nowrap font-serif text-2xl sm:text-3xl text-primary">{fmt(Number(menuItem.base_price), currency)}</span>
                 </div>
 
                 {/* Meta Info */}
@@ -197,7 +203,7 @@ function ItemDetail() {
                   disabled={!menuItem.is_available}
                   className="flex-1 rounded-lg bg-primary px-6 py-3.5 text-base font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
-                  Add to Order · {fmt(Number(menuItem.base_price) * qty)}
+                  Add to Order · {fmt(Number(menuItem.base_price) * qty, currency)}
                 </button>
               </div>
             </div>
