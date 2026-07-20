@@ -1,9 +1,9 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { getSessionOrders, type PlacedOrder } from "@/lib/api";
+import { getSessionOrders, getSessionByToken, type PlacedOrder } from "@/lib/api";
 import { SiteHeader } from "@/components/site-header";
 import { fmt } from "@/lib/cart";
-import { Clock, ChefHat, CheckCircle2, Loader2, Package, AlertCircle } from "lucide-react";
+import { Clock, ChefHat, CheckCircle2, Loader2, Package, AlertCircle, PartyPopper } from "lucide-react";
 
 export const Route = createFileRoute("/orders")({
   component: OrdersPage,
@@ -15,11 +15,30 @@ function OrdersPage() {
   const sessionDataStr = localStorage.getItem("sessionData");
   const sessionData = sessionDataStr ? JSON.parse(sessionDataStr) : null;
 
+  // Poll session status to detect when cashier completes the bill
+  const { data: sessionDataRes } = useQuery({
+    queryKey: ["session-status", sessionToken],
+    queryFn: () => getSessionByToken(sessionToken!),
+    enabled: !!sessionToken,
+    refetchInterval: 10000,
+  });
+
+  const sessionStatus = sessionDataRes?.data?.status;
+
+  // Session completed — clear local data and show thank you
+  if (sessionStatus === "completed") {
+    localStorage.removeItem("sessionToken");
+    localStorage.removeItem("sessionData");
+    localStorage.removeItem("pendingTableInfo");
+    localStorage.removeItem("bistro-cart-v1");
+    return <SessionCompleted />;
+  }
+
   const { data, isLoading, error } = useQuery({
     queryKey: ["orders", sessionToken],
     queryFn: () => getSessionOrders(sessionToken!),
     enabled: !!sessionToken,
-    refetchInterval: 10000, // Poll every 10 seconds
+    refetchInterval: 10000,
   });
 
   if (!sessionToken) {
@@ -151,6 +170,27 @@ function OrdersPage() {
             </div>
           </div>
         )}
+      </div>
+    </div>
+  );
+}
+
+function SessionCompleted() {
+  const navigate = useNavigate();
+  return (
+    <div className="min-h-screen bg-background flex items-center justify-center px-4">
+      <div className="max-w-md rounded-xl border border-border bg-card p-12 text-center">
+        <PartyPopper className="mx-auto h-16 w-16 text-primary mb-4" />
+        <h1 className="font-serif text-3xl text-foreground mb-2">Thank You!</h1>
+        <p className="text-muted-foreground mb-6">
+          Your bill has been paid. We hope you enjoyed your meal!
+        </p>
+        <button
+          onClick={() => navigate({ to: "/" })}
+          className="inline-flex items-center rounded-lg bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
+        >
+          Browse Menu
+        </button>
       </div>
     </div>
   );

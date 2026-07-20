@@ -27,6 +27,9 @@ function Menu() {
   const { data, isLoading } = useQuery({ queryKey: ["menu"], queryFn: loadMenu });
   const [active, setActive] = useState<string | null>(null);
   const { add } = useCart();
+  const sessionToken = localStorage.getItem("sessionToken");
+  const sessionDataStr = localStorage.getItem("sessionData");
+  const sessionData = sessionDataStr ? JSON.parse(sessionDataStr) : null;
 
   const categories = data?.categories ?? [];
   const menuItems = data?.items ?? [];
@@ -41,6 +44,17 @@ function Menu() {
   return (
     <div className="min-h-screen">
       <SiteHeader />
+
+      {/* Session status banner */}
+      {sessionToken && sessionData ? (
+        <div className="bg-primary/10 border-b border-primary/20 px-4 py-2 text-center text-sm">
+          Table {sessionData.table_number || '—'} · Ordering as {sessionData.customer_name || 'Guest'}
+        </div>
+      ) : (
+        <div className="bg-muted border-b border-border px-4 py-2 text-center text-sm text-muted-foreground">
+          Scan a QR code on your table to start ordering
+        </div>
+      )}
 
       <section className="relative overflow-hidden border-b border-border/60">
         <img src={heroImg} alt="Olivera dining room" width={1600} height={1024}
