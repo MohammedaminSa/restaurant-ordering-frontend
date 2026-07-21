@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { useCart, fmt } from "@/lib/cart";
 import { placeOrder, createSession, getSessionByToken, type PaymentDetails } from "@/lib/api";
 import { toast } from "sonner";
-import { ShoppingBag, ArrowLeft, CheckCircle, Loader2, MapPin, User, Table as TableIcon, Trash2, Plus, Minus, Smartphone, Building2, Banknote, CreditCard } from "lucide-react";
+import { ShoppingBag, ArrowLeft, CheckCircle, Loader2, MapPin, User, Table as TableIcon, Trash2, Plus, Minus, Smartphone, Building2, Banknote, CreditCard, ChevronRight } from "lucide-react";
 import { SiteHeader } from "@/components/site-header";
 
 export const Route = createFileRoute("/cart")({
@@ -15,15 +15,14 @@ function CartPage() {
   const { items, count, total, clear, updateQuantity, remove } = useCart();
   const [submitting, setSubmitting] = useState(false);
   const [orderInstructions, setOrderInstructions] = useState("");
-  const [showPaymentDialog, setShowPaymentDialog] = useState(false);
-  const [showSuccessDialog, setShowSuccessDialog] = useState(false);
   const [orderNumber, setOrderNumber] = useState<number | null>(null);
   const [showCustomerForm, setShowCustomerForm] = useState(false);
   const [pendingTableInfo, setPendingTableInfo] = useState<any>(null);
   const [paymentDetails, setPaymentDetails] = useState<PaymentDetails | null>(null);
   const [fetchingSession, setFetchingSession] = useState(false);
+  const [step, setStep] = useState<'checkout' | 'payment-method' | 'payment-details' | 'confirmation'>('checkout');
 
-  // Payment form state (inside dialog)
+  // Payment form state
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string>('cash');
   const [transactionId, setTransactionId] = useState('');
   const [payerName, setPayerName] = useState('');
@@ -113,8 +112,8 @@ function CartPage() {
     setTransactionId('');
     setPayerName(sessionData?.customer_name || '');
 
-    // Show payment form dialog
-    setShowPaymentDialog(true);
+    // Navigate to payment method step
+    setStep('payment-method');
   };
 
   const handleConfirmOrder = async () => {
@@ -146,9 +145,8 @@ function CartPage() {
         transaction_id: selectedPaymentMethod !== 'cash' ? transactionId.trim() : undefined,
       });
 
-      setShowPaymentDialog(false);
+      setStep('confirmation');
       setOrderNumber(response.data.order_number);
-      setShowSuccessDialog(true);
       clear();
       setOrderInstructions("");
     } catch (error: any) {
@@ -160,7 +158,6 @@ function CartPage() {
   };
 
   const handleSuccessClose = () => {
-    setShowSuccessDialog(false);
     navigate({ to: "/orders" });
   };
 
@@ -212,8 +209,8 @@ function CartPage() {
     );
   }
 
-  // Redirect if cart is empty (but NOT if showing success dialog)
-  if (items.length === 0 && !showSuccessDialog) {
+  // Redirect if cart is empty (but NOT if on confirmation step)
+  if (items.length === 0 && step !== 'confirmation') {
     return (
       <div className="min-h-screen bg-background">
         <SiteHeader />
@@ -236,8 +233,8 @@ function CartPage() {
     );
   }
 
-  // Redirect if no session AND no pending table info (but NOT if showing success dialog)
-  if (!sessionData && !pendingTableInfo && !showSuccessDialog) {
+  // Redirect if no session AND no pending table info (but NOT if on confirmation step)
+  if (!sessionData && !pendingTableInfo && step !== 'confirmation') {
     return (
       <div className="min-h-screen bg-background">
         <SiteHeader />
@@ -258,6 +255,249 @@ function CartPage() {
     );
   }
 
+  // =========================================================
+  // STEP 3: CONFIRMATION
+  // =========================================================
+  if (step === 'confirmation') {
+    return (
+      <div className="min-h-screen bg-background">
+        <SiteHeader />
+        <div className="mx-auto max-w-lg px-4 py-16 text-center">
+          <div className="rounded-full bg-green-100 p-4 w-24 h-24 mx-auto mb-6 flex items-center justify-center">
+            <CheckCircle className="h-12 w-12 text-green-600" />
+          </div>
+          <h1 className="text-3xl font-bold text-foreground mb-2">Order Placed!</h1>
+          <p className="text-muted-foreground mb-2">Your order number is</p>
+          <p className="text-5xl font-bold text-primary mb-4">#{orderNumber}</p>
+          <div className="rounded-xl border border-border bg-card p-4 mb-8 text-sm text-muted-foreground space-y-1">
+            <p>
+              Payment:{' '}
+              <span className="font-semibold text-foreground">
+                {selectedPaymentMethod === 'cash' ? 'Cash' : selectedPaymentMethod === 'telebirr' ? 'Digital Wallet' : 'Bank Transfer'}
+              </span>
+            </p>
+            {selectedPaymentMethod !== 'cash' && (
+              <p>
+                Transaction ID: <span className="font-semibold text-foreground">{transactionId}</span>
+              </p>
+            )}
+            <p>We'll notify you when your order is ready.</p>
+          </div>
+          <button
+            onClick={handleSuccessClose}
+            className="w-full rounded-xl bg-primary px-6 py-4 text-lg font-semibold text-primary-foreground hover:bg-primary/90 shadow-lg shadow-primary/25"
+          >
+            Track My Order
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // =========================================================
+  // STEP 2: PAYMENT DETAILS
+  // =========================================================
+  if (step === 'payment-details') {
+    return (
+      <div className="min-h-screen bg-background">
+        <SiteHeader />
+        <div className="mx-auto max-w-lg px-4 py-8">
+          <button
+            onClick={() => setStep('payment-method')}
+            className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-6"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back to payment method
+          </button>
+
+          <h1 className="text-2xl font-bold text-foreground mb-6">Payment Details</h1>
+
+          {/* Payment Instructions for non-cash */}
+          {selectedPaymentMethod !== 'cash' && paymentDetails && (
+            <div className="rounded-xl border border-blue-200 bg-blue-50 p-5 mb-6">
+              <h3 className="font-semibold text-blue-800 mb-3">
+                {selectedPaymentMethod === 'telebirr' ? 'Send via Digital Wallet' : 'Transfer via Bank'}
+              </h3>
+              {selectedPaymentMethod === 'telebirr' && paymentDetails.wallets && paymentDetails.wallets.length > 0 ? (
+                <div className="space-y-3">
+                  {paymentDetails.wallets.map((w, i) => (
+                    <div key={i} className="text-sm text-blue-700">
+                      <p className="font-semibold text-blue-800">{w.type}</p>
+                      <p>Account: {w.account_name}</p>
+                      <p className="font-mono font-bold">{w.phone}</p>
+                    </div>
+                  ))}
+                </div>
+              ) : selectedPaymentMethod === 'bank_transfer' && paymentDetails.banks && paymentDetails.banks.length > 0 ? (
+                <div className="space-y-3">
+                  {paymentDetails.banks.map((b, i) => (
+                    <div key={i} className="text-sm text-blue-700">
+                      <p><span className="text-blue-600">Bank:</span> <span className="font-semibold">{b.bank_name}</span></p>
+                      <p><span className="text-blue-600">Holder:</span> {b.account_holder}</p>
+                      <p className="font-mono font-bold">{b.account_number}</p>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-blue-700">Payment details not configured. Please contact the restaurant.</p>
+              )}
+            </div>
+          )}
+
+          <div className="space-y-5">
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-1.5">Your Name</label>
+              <input
+                type="text"
+                value={payerName}
+                onChange={(e) => setPayerName(e.target.value)}
+                className="w-full rounded-xl border border-input bg-background px-4 py-3 text-sm text-foreground focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring"
+                placeholder="Enter your full name"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-1.5">Payment Method</label>
+              <div className="w-full rounded-xl border border-input bg-muted px-4 py-3 text-sm text-muted-foreground">
+                {selectedPaymentMethod === 'cash' ? 'Cash' : selectedPaymentMethod === 'telebirr' ? 'Digital Wallet' : 'Bank Transfer'}
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-1.5">Total Amount ({currency || 'ETB'})</label>
+              <div className="w-full rounded-xl border border-input bg-muted px-4 py-3 text-sm font-bold text-foreground">
+                {fmt(grandTotal, currency)}
+              </div>
+            </div>
+
+            {selectedPaymentMethod !== 'cash' && (
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-1.5">Transaction ID / Reference *</label>
+                <input
+                  type="text"
+                  value={transactionId}
+                  onChange={(e) => setTransactionId(e.target.value)}
+                  className="w-full rounded-xl border border-input bg-background px-4 py-3 text-sm text-foreground focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring"
+                  placeholder="Enter the transaction reference number"
+                />
+                <p className="text-xs text-muted-foreground mt-1.5">
+                  Enter the reference number from your {selectedPaymentMethod === 'telebirr' ? 'wallet' : 'bank'} transfer
+                </p>
+              </div>
+            )}
+          </div>
+
+          <button
+            onClick={handleConfirmOrder}
+            disabled={submitting || !payerName.trim() || (selectedPaymentMethod !== 'cash' && !transactionId.trim())}
+            className="w-full rounded-xl bg-primary px-6 py-4 text-lg font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-primary/25 mt-8"
+          >
+            {submitting ? (
+              <span className="flex items-center justify-center gap-2">
+                <Loader2 className="h-5 w-5 animate-spin" />
+                Processing...
+              </span>
+            ) : (
+              'Place Order'
+            )}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // =========================================================
+  // STEP 1: PAYMENT METHOD SELECTION
+  // =========================================================
+  if (step === 'payment-method') {
+    const methods = [
+      {
+        id: 'cash',
+        label: 'Cash',
+        description: 'Pay at the counter',
+        icon: Banknote,
+      },
+      {
+        id: 'telebirr',
+        label: 'Digital Wallet',
+        description: 'Telebirr, M-Pesa, eBirr & more',
+        icon: Smartphone,
+      },
+      {
+        id: 'bank_transfer',
+        label: 'Bank Transfer',
+        description: 'Direct deposit to our account',
+        icon: Building2,
+      },
+    ];
+
+    return (
+      <div className="min-h-screen bg-background">
+        <SiteHeader />
+        <div className="mx-auto max-w-lg px-4 py-12">
+          <button
+            onClick={() => setStep('checkout')}
+            className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-8"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back to cart
+          </button>
+
+          <div className="mb-8">
+            <h1 className="text-2xl font-bold text-foreground mb-1">Choose Payment Method</h1>
+            <p className="text-muted-foreground text-sm">Select how you'd like to pay for your order</p>
+          </div>
+
+          <div className="space-y-3 mb-8">
+            {methods.map((method) => {
+              const selected = selectedPaymentMethod === method.id;
+              const Icon = method.icon;
+              return (
+                <button
+                  key={method.id}
+                  onClick={() => {
+                    setSelectedPaymentMethod(method.id);
+                    setTransactionId('');
+                  }}
+                  className={`w-full flex items-center gap-4 rounded-xl border-2 p-4 text-left transition-all ${
+                    selected
+                      ? 'border-primary bg-primary/5'
+                      : 'border-border hover:border-primary/50 hover:bg-accent/50'
+                  }`}
+                >
+                  <div className={`rounded-xl p-3 ${
+                    selected ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
+                  }`}>
+                    <Icon className="h-6 w-6" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className={`font-semibold ${selected ? 'text-primary' : 'text-foreground'}`}>{method.label}</p>
+                    <p className="text-sm text-muted-foreground truncate">{method.description}</p>
+                  </div>
+                  <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                    selected ? 'border-primary' : 'border-muted-foreground/30'
+                  }`}>
+                    {selected && <div className="w-2.5 h-2.5 rounded-full bg-primary" />}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+
+          <button
+            onClick={() => setStep('payment-details')}
+            className="w-full rounded-xl bg-primary px-6 py-4 text-lg font-semibold text-primary-foreground hover:bg-primary/90 shadow-lg shadow-primary/25"
+          >
+            Continue
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // =========================================================
+  // CHECKOUT (default step)
+  // =========================================================
   return (
     <div className="min-h-screen bg-background">
       <SiteHeader />
@@ -455,188 +695,6 @@ function CartPage() {
           </p>
         )}
       </div>
-
-      {/* Payment Form Dialog */}
-      {showPaymentDialog && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-background rounded-xl border border-border p-6 max-w-lg w-full mx-4 max-h-[90vh] overflow-y-auto">
-            <h2 className="text-xl font-bold text-foreground mb-4">Complete Payment</h2>
-
-            {/* Step 1: Select Payment Method */}
-            <div className="mb-4">
-              <h3 className="font-semibold text-foreground mb-3">Select Payment Method</h3>
-              <div className="grid grid-cols-2 gap-3">
-                <button
-                  onClick={() => { setSelectedPaymentMethod('cash'); setTransactionId(''); }}
-                  className={`rounded-lg border-2 p-3 text-center transition-all ${
-                    selectedPaymentMethod === 'cash'
-                      ? 'border-primary bg-primary/5'
-                      : 'border-border hover:border-primary/50'
-                  }`}
-                >
-                  <Banknote className="h-6 w-6 mx-auto mb-1 text-foreground" />
-                  <span className="text-sm font-semibold text-foreground block">Cash</span>
-                  <span className="text-xs text-muted-foreground">Pay at counter</span>
-                </button>
-                <button
-                  onClick={() => setSelectedPaymentMethod('telebirr')}
-                  className={`rounded-lg border-2 p-3 text-center transition-all ${
-                    selectedPaymentMethod === 'telebirr'
-                      ? 'border-primary bg-primary/5'
-                      : 'border-border hover:border-primary/50'
-                  }`}
-                >
-                  <Smartphone className="h-6 w-6 mx-auto mb-1 text-foreground" />
-                  <span className="text-sm font-semibold text-foreground block">Telebirr</span>
-                  <span className="text-xs text-muted-foreground">Mobile money</span>
-                </button>
-                <button
-                  onClick={() => setSelectedPaymentMethod('bank_transfer')}
-                  className={`rounded-lg border-2 p-3 text-center transition-all ${
-                    selectedPaymentMethod === 'bank_transfer'
-                      ? 'border-primary bg-primary/5'
-                      : 'border-border hover:border-primary/50'
-                  }`}
-                >
-                  <Building2 className="h-6 w-6 mx-auto mb-1 text-foreground" />
-                  <span className="text-sm font-semibold text-foreground block">Bank Transfer</span>
-                  <span className="text-xs text-muted-foreground">Direct deposit</span>
-                </button>
-              </div>
-            </div>
-
-            {/* Payment Instructions for non-cash */}
-            {selectedPaymentMethod !== 'cash' && (
-              <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 mb-4">
-                <h4 className="font-semibold text-blue-800 mb-2">
-                  Transfer via {selectedPaymentMethod === 'telebirr' ? 'Digital Wallet' : 'Bank Transfer'}
-                </h4>
-                {selectedPaymentMethod === 'telebirr' && paymentDetails?.wallets && paymentDetails.wallets.length > 0 ? (
-                  <div className="space-y-3">
-                    {paymentDetails.wallets.map((w, i) => (
-                      <div key={i} className="text-sm text-blue-700 space-y-0.5">
-                        <p className="font-medium text-blue-800">{w.type}</p>
-                        <p>Account: <strong>{w.account_name}</strong></p>
-                        <p>Phone: <strong>{w.phone}</strong></p>
-                      </div>
-                    ))}
-                  </div>
-                ) : selectedPaymentMethod === 'bank_transfer' && paymentDetails?.banks && paymentDetails.banks.length > 0 ? (
-                  <div className="space-y-3">
-                    {paymentDetails.banks.map((b, i) => (
-                      <div key={i} className="text-sm text-blue-700 space-y-0.5">
-                        <p>Bank: <strong>{b.bank_name}</strong></p>
-                        <p>Holder: <strong>{b.account_holder}</strong></p>
-                        <p>Account: <strong>{b.account_number}</strong></p>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-sm text-blue-700">Payment details not configured. Please contact the restaurant.</p>
-                )}
-              </div>
-            )}
-
-            {/* Step 2: Payment Completion Form */}
-            <div className="space-y-4">
-              <h3 className="font-semibold text-foreground">Payment Details</h3>
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-1">Your Name</label>
-                <input
-                  type="text"
-                  value={payerName}
-                  onChange={(e) => setPayerName(e.target.value)}
-                  className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring"
-                  placeholder="Enter your name"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-1">Payment Method</label>
-                <input
-                  type="text"
-                  value={selectedPaymentMethod === 'cash' ? 'Cash' : selectedPaymentMethod === 'telebirr' ? 'Digital Wallet' : 'Bank Transfer'}
-                  disabled
-                  className="w-full rounded-lg border border-input bg-muted px-3 py-2 text-sm text-muted-foreground"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-1">Amount ({currency || 'ETB'})</label>
-                <input
-                  type="number"
-                  value={grandTotal.toFixed(2)}
-                  disabled
-                  className="w-full rounded-lg border border-input bg-muted px-3 py-2 text-sm font-bold text-foreground"
-                />
-                <p className="text-xs text-muted-foreground mt-1">Total menu price — must match exactly</p>
-              </div>
-              {selectedPaymentMethod !== 'cash' && (
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-1">Transaction ID / Reference *</label>
-                  <input
-                    type="text"
-                    value={transactionId}
-                    onChange={(e) => setTransactionId(e.target.value)}
-                    className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring"
-                    placeholder="Enter your transaction reference number"
-                    required
-                  />
-                </div>
-              )}
-            </div>
-
-            <div className="flex gap-3 mt-6">
-              <button
-                onClick={() => setShowPaymentDialog(false)}
-                disabled={submitting}
-                className="flex-1 rounded-lg border border-border bg-background px-4 py-2 font-semibold text-foreground hover:bg-accent disabled:opacity-50"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleConfirmOrder}
-                disabled={submitting || !payerName.trim() || (selectedPaymentMethod !== 'cash' && !transactionId.trim())}
-                className="flex-1 rounded-lg bg-primary px-4 py-2 font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {submitting ? (
-                  <span className="flex items-center justify-center gap-2">
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    Processing...
-                  </span>
-                ) : (
-                  'Place Order'
-                )}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Success Dialog */}
-      {showSuccessDialog && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-background rounded-xl border border-border p-8 max-w-md w-full mx-4 text-center">
-            <CheckCircle className="mx-auto h-20 w-20 text-green-500 mb-4" />
-            <h2 className="text-2xl font-bold text-foreground mb-2">Order Placed Successfully!</h2>
-            <p className="text-muted-foreground mb-2">Your order number is</p>
-            <p className="text-4xl font-bold text-primary mb-2">#{orderNumber}</p>
-            <p className="text-sm text-muted-foreground mb-1">
-              {selectedPaymentMethod !== 'cash'
-                ? `Payment via ${selectedPaymentMethod} completed`
-                : 'Pay with cash at the counter'}
-            </p>
-            <p className="text-sm text-muted-foreground mb-6">
-              We'll notify you when your order is ready
-            </p>
-            <button
-              onClick={handleSuccessClose}
-              className="w-full rounded-lg bg-primary px-6 py-3 text-lg font-semibold text-primary-foreground hover:bg-primary/90"
-            >
-              Track My Order
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
