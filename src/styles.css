@@ -40,6 +40,7 @@
   --color-ring-offset-background: var(--background);
   --color-cream: var(--cream);
   --color-ember: var(--ember);
+  --color-sidebar: var(--sidebar);
   --color-olive: var(--olive);
 }
 
@@ -50,6 +51,7 @@
   --foreground: oklch(0.20 0.02 45);
   --cream: oklch(0.965 0.02 80);
   --ember: oklch(0.55 0.16 40);
+  --sidebar: oklch(0.28 0.05 40);
   --olive: oklch(0.42 0.06 120);
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.20 0.02 45);
@@ -85,6 +87,7 @@
   --muted-foreground: oklch(0.70 0.02 60);
   --accent: oklch(0.65 0.16 40);
   --accent-foreground: oklch(0.18 0.02 45);
+  --sidebar: oklch(0.24 0.04 40);
   --border: oklch(0.30 0.02 45);
   --input: oklch(0.30 0.02 45);
   --ring: oklch(0.65 0.16 40);

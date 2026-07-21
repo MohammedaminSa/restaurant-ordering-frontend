@@ -185,7 +185,7 @@ function DashboardLayout() {
 
       {/* Sidebar - mobile: drawer, desktop: fixed */}
       <aside
-        className={`fixed inset-y-0 left-0 z-50 flex w-64 flex-col bg-ember overflow-y-auto transition-transform duration-300 ease-in-out lg:translate-x-0 lg:z-30 ${
+        className={`fixed inset-y-0 left-0 z-50 flex w-64 flex-col bg-sidebar overflow-y-auto transition-transform duration-300 ease-in-out lg:translate-x-0 lg:z-30 ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
@@ -195,7 +195,7 @@ function DashboardLayout() {
       {/* Main area */}
       <div className="flex min-h-screen flex-col lg:pl-64">
         {/* Header */}
-        <header className="sticky top-0 z-20 flex h-16 shrink-0 items-center gap-3 border-b border-white/15 bg-ember px-4 lg:px-6">
+        <header className="sticky top-0 z-20 flex h-16 shrink-0 items-center gap-3 border-b border-white/15 bg-sidebar px-4 lg:px-6">
           <button
             onClick={() => setSidebarOpen(true)}
             className="flex items-center justify-center rounded-lg p-2 text-white/70 hover:bg-white/15 hover:text-white lg:hidden"
