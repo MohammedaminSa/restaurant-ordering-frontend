@@ -352,8 +352,6 @@ function CartPage() {
                     <span className="font-semibold text-blue-800 text-right">{selectedAccount.bank_name}</span>
                     <span className="text-blue-500">Account Holder</span>
                     <span className="font-semibold text-blue-800 text-right">{selectedAccount.account_holder}</span>
-                    <span className="text-blue-500">Account Number</span>
-                    <span className="font-mono font-bold text-blue-800 text-right text-base">{selectedAccount.account_number}</span>
                   </div>
                 )}
               </div>
@@ -385,7 +383,7 @@ function CartPage() {
                 ) : selectedPaymentMethod === 'bank_transfer' && selectedAccount ? (
                   <div className="flex items-center justify-between text-foreground">
                     <span className="font-medium">{selectedAccount.bank_name}</span>
-                    <span className="font-mono text-xs">{selectedAccount.account_number}</span>
+                    <span className="text-xs text-muted-foreground">{selectedAccount.account_holder}</span>
                   </div>
                 ) : (
                   <span className="text-muted-foreground">
@@ -557,7 +555,7 @@ function CartPage() {
                               <Building2 className="h-4 w-4 text-muted-foreground shrink-0" />
                               <p className="text-sm font-medium">{b.bank_name}</p>
                             </div>
-                            <p className="text-xs text-muted-foreground pl-6">{b.account_holder} — {b.account_number}</p>
+                            <p className="text-xs text-muted-foreground pl-6">{b.account_holder}</p>
                           </div>
                         </SelectItem>
                       ))}
@@ -582,7 +580,6 @@ function CartPage() {
                       <div className="text-sm text-blue-700 space-y-0.5">
                         <p className="font-semibold text-blue-800">{selectedAccount.bank_name}</p>
                         <p>Holder: {selectedAccount.account_holder}</p>
-                        <p className="font-mono font-bold">{selectedAccount.account_number}</p>
                       </div>
                     )}
                   </div>

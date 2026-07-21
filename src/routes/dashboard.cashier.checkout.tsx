@@ -21,6 +21,7 @@ import {
   Banknote,
   Smartphone,
   Wallet,
+  Landmark,
   AlertCircle,
 } from "lucide-react";
 import { getActiveSessions, getSessionBill, recordPayment, getMyRestaurant, type SessionBill, type PaymentRequest, type PaymentDetails } from "@/lib/api";
@@ -131,6 +132,7 @@ function CashierCheckout() {
     notes: "",
   });
   const [paymentResult, setPaymentResult] = useState<any>(null);
+  const [selectedAccount, setSelectedAccount] = useState<any>(null);
 
   const { data: sessionsData, isLoading, isError: isErrorSessions } = useQuery({
     queryKey: ["cashier-active-sessions", user?.restaurant_id],
@@ -402,7 +404,10 @@ function CashierCheckout() {
                     <Label>Payment Method</Label>
                     <Select
                       value={form.payment_method}
-                      onValueChange={(value: any) => setForm({ ...form, payment_method: value })}
+                      onValueChange={(value: any) => {
+                        setForm({ ...form, payment_method: value });
+                        setSelectedAccount(null);
+                      }}
                     >
                       <SelectTrigger>
                         <SelectValue />
@@ -437,34 +442,82 @@ function CashierCheckout() {
                     </Select>
                   </div>
 
-                  {form.payment_method !== "cash" && paymentDetails && (
-                    <div className="rounded-lg border border-border bg-accent/5 p-4 space-y-3">
-                      <p className="text-sm font-semibold text-foreground flex items-center gap-2">
-                        <AlertCircle className="h-4 w-4 text-accent" />
-                        Payment Instructions
-                      </p>
-                      {form.payment_method === "telebirr" && paymentDetails.wallets && paymentDetails.wallets.length > 0 ? (
-                        <div className="space-y-2 text-sm">
-                          {paymentDetails.wallets.map((w, i) => (
-                            <div key={i} className="space-y-0.5">
-                              <p className="font-medium text-foreground">{w.type}</p>
-                              <p><span className="text-muted-foreground">Account:</span> {w.account_name}</p>
-                              <p><span className="text-muted-foreground">Phone:</span> {w.phone}</p>
+                  {(form.payment_method === "telebirr" || form.payment_method === "bank_transfer") && (
+                    <div className="space-y-3">
+                      <div className="space-y-2">
+                        <Label>
+                          {form.payment_method === "telebirr" ? "Wallet Account" : "Bank Account"}
+                        </Label>
+                        {form.payment_method === "telebirr" && paymentDetails?.wallets?.length > 0 ? (
+                          <Select
+                            value={selectedAccount ? JSON.stringify(selectedAccount) : ''}
+                            onValueChange={(v) => setSelectedAccount(JSON.parse(v))}
+                          >
+                            <SelectTrigger className="h-10">
+                              <div className="flex items-center gap-2">
+                                <Wallet className="h-4 w-4 text-muted-foreground shrink-0" />
+                                <SelectValue placeholder="Choose a wallet" />
+                              </div>
+                            </SelectTrigger>
+                            <SelectContent>
+                              {paymentDetails.wallets.map((w: any, i: number) => (
+                                <SelectItem key={i} value={JSON.stringify(w)} className="py-2">
+                                  <div>
+                                    <p className="text-sm font-medium">{w.type}</p>
+                                    <p className="text-xs text-muted-foreground">{w.account_name} — {w.phone}</p>
+                                  </div>
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        ) : form.payment_method === "bank_transfer" && paymentDetails?.banks?.length > 0 ? (
+                          <Select
+                            value={selectedAccount ? JSON.stringify(selectedAccount) : ''}
+                            onValueChange={(v) => setSelectedAccount(JSON.parse(v))}
+                          >
+                            <SelectTrigger className="h-10">
+                              <div className="flex items-center gap-2">
+                                <Landmark className="h-4 w-4 text-muted-foreground shrink-0" />
+                                <SelectValue placeholder="Choose a bank account" />
+                              </div>
+                            </SelectTrigger>
+                            <SelectContent>
+                              {paymentDetails.banks.map((b: any, i: number) => (
+                                <SelectItem key={i} value={JSON.stringify(b)} className="py-2">
+                                  <div>
+                                    <p className="text-sm font-medium">{b.bank_name}</p>
+                                    <p className="text-xs text-muted-foreground">{b.account_holder}</p>
+                                  </div>
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        ) : (
+                          <p className="text-sm text-muted-foreground rounded-lg border border-dashed border-muted-foreground/30 p-3">
+                            No accounts configured.
+                          </p>
+                        )}
+                      </div>
+
+                      {selectedAccount && (
+                        <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
+                          <h4 className="text-sm font-semibold text-blue-800 mb-2 flex items-center gap-2">
+                            <AlertCircle className="h-4 w-4" />
+                            {form.payment_method === "telebirr" ? 'Wallet Selected' : 'Account Selected'}
+                          </h4>
+                          {form.payment_method === "telebirr" ? (
+                            <div className="text-sm text-blue-700 space-y-0.5">
+                              <p><span className="text-blue-500">Provider:</span> <span className="font-semibold">{selectedAccount.type}</span></p>
+                              <p><span className="text-blue-500">Name:</span> {selectedAccount.account_name}</p>
+                              <p><span className="text-blue-500">Phone:</span> <span className="font-mono font-bold">{selectedAccount.phone}</span></p>
                             </div>
-                          ))}
-                        </div>
-                      ) : form.payment_method === "bank_transfer" && paymentDetails.banks && paymentDetails.banks.length > 0 ? (
-                        <div className="space-y-2 text-sm">
-                          {paymentDetails.banks.map((b, i) => (
-                            <div key={i} className="space-y-0.5">
-                              <p><span className="text-muted-foreground">Bank:</span> {b.bank_name}</p>
-                              <p><span className="text-muted-foreground">Account Holder:</span> {b.account_holder}</p>
-                              <p><span className="text-muted-foreground">Account:</span> <span className="font-bold text-foreground">{b.account_number}</span></p>
+                          ) : (
+                            <div className="text-sm text-blue-700 space-y-0.5">
+                              <p><span className="text-blue-500">Bank:</span> <span className="font-semibold">{selectedAccount.bank_name}</span></p>
+                              <p><span className="text-blue-500">Holder:</span> {selectedAccount.account_holder}</p>
                             </div>
-                          ))}
+                          )}
                         </div>
-                      ) : (
-                        <p className="text-sm text-muted-foreground">Payment details not configured.</p>
                       )}
                     </div>
                   )}
