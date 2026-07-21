@@ -28,6 +28,7 @@ function AdminRestaurants() {
     currency: "USD",
     tax_rate: "0",
     service_charge_rate: "0",
+    timezone: "UTC",
   });
 
   const { data, isLoading, isError, error } = useQuery({
@@ -81,7 +82,7 @@ function AdminRestaurants() {
 
   const resetForm = () => setForm({
     name: "", description: "", address: "", phone: "", email: "", logo_url: "",
-    currency: "USD", tax_rate: "0", service_charge_rate: "0",
+    currency: "USD", tax_rate: "0", service_charge_rate: "0", timezone: "UTC",
   });
 
   const openCreate = () => {
@@ -102,6 +103,7 @@ function AdminRestaurants() {
       currency: r.currency || "USD",
       tax_rate: String(r.tax_rate || 0),
       service_charge_rate: String(r.service_charge_rate || 0),
+      timezone: r.timezone || "UTC",
     });
     setShowModal(true);
   };
@@ -118,6 +120,7 @@ function AdminRestaurants() {
       currency: form.currency,
       tax_rate: parseFloat(form.tax_rate) || 0,
       service_charge_rate: parseFloat(form.service_charge_rate) || 0,
+      timezone: form.timezone,
     };
     if (editingRestaurant) {
       updateMutation.mutate({ id: editingRestaurant.id, data: payload });
@@ -294,7 +297,7 @@ function AdminRestaurants() {
                 <label className="block text-sm font-medium text-foreground mb-1">Logo URL</label>
                 <input type="url" value={form.logo_url} onChange={(e) => setForm({ ...form, logo_url: e.target.value })} placeholder="https://example.com/logo.png" className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder-muted-foreground/60 focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring" />
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-foreground mb-1">Currency</label>
                   <select value={form.currency} onChange={(e) => setForm({ ...form, currency: e.target.value })} className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring">
@@ -306,6 +309,32 @@ function AdminRestaurants() {
                     <option value="KES">KES</option>
                   </select>
                 </div>
+                <div>
+                  <label className="block text-sm font-medium text-foreground mb-1">Timezone</label>
+                  <select value={form.timezone} onChange={(e) => setForm({ ...form, timezone: e.target.value })} className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring">
+                    <option value="UTC">UTC</option>
+                    <option value="Africa/Addis_Ababa">Africa/Addis_Ababa (UTC+3)</option>
+                    <option value="Africa/Nairobi">Africa/Nairobi (UTC+3)</option>
+                    <option value="Africa/Lagos">Africa/Lagos (UTC+1)</option>
+                    <option value="Africa/Cairo">Africa/Cairo (UTC+2)</option>
+                    <option value="Africa/Casablanca">Africa/Casablanca (UTC+1)</option>
+                    <option value="America/New_York">America/New_York (UTC-5)</option>
+                    <option value="America/Chicago">America/Chicago (UTC-6)</option>
+                    <option value="America/Denver">America/Denver (UTC-7)</option>
+                    <option value="America/Los_Angeles">America/Los_Angeles (UTC-8)</option>
+                    <option value="Europe/London">Europe/London (UTC+0)</option>
+                    <option value="Europe/Paris">Europe/Paris (UTC+1)</option>
+                    <option value="Europe/Dubai">Europe/Dubai (UTC+4)</option>
+                    <option value="Asia/Kolkata">Asia/Kolkata (UTC+5:30)</option>
+                    <option value="Asia/Bangkok">Asia/Bangkok (UTC+7)</option>
+                    <option value="Asia/Shanghai">Asia/Shanghai (UTC+8)</option>
+                    <option value="Asia/Tokyo">Asia/Tokyo (UTC+9)</option>
+                    <option value="Australia/Sydney">Australia/Sydney (UTC+11)</option>
+                    <option value="Pacific/Auckland">Pacific/Auckland (UTC+13)</option>
+                  </select>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-foreground mb-1">Tax Rate (%)</label>
                   <input type="number" step="0.01" min="0" max="100" value={form.tax_rate} onChange={(e) => setForm({ ...form, tax_rate: e.target.value })} className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder-muted-foreground/60 focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring" />
