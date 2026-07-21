@@ -3,7 +3,9 @@ import { useState, useEffect } from "react";
 import { useCart, fmt } from "@/lib/cart";
 import { placeOrder, createSession, getSessionByToken, type PaymentDetails } from "@/lib/api";
 import { toast } from "sonner";
-import { ShoppingBag, ArrowLeft, CheckCircle, Loader2, MapPin, User, Table as TableIcon, Trash2, Plus, Minus, Smartphone, Building2, Banknote, CreditCard, ChevronRight } from "lucide-react";
+import { ShoppingBag, ArrowLeft, CheckCircle, Loader2, MapPin, User, Table as TableIcon, Trash2, Plus, Minus, Smartphone, Building2, Banknote, CreditCard, ChevronRight, Wallet, Landmark } from "lucide-react";
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
 import { SiteHeader } from "@/components/site-header";
 
 export const Route = createFileRoute("/cart")({
@@ -317,22 +319,44 @@ function CartPage() {
           {/* Selected account info */}
           {selectedPaymentMethod !== 'cash' && selectedAccount && (
             <div className="rounded-xl border border-blue-200 bg-blue-50 p-5 mb-6">
-              <h3 className="font-semibold text-blue-800 mb-2">
-                {selectedPaymentMethod === 'telebirr' ? 'Send to this Wallet' : 'Transfer to this Account'}
-              </h3>
-              {selectedPaymentMethod === 'telebirr' ? (
-                <div className="text-sm text-blue-700 space-y-0.5">
-                  <p className="font-semibold text-blue-800">{selectedAccount.type}</p>
-                  <p>Account: {selectedAccount.account_name}</p>
-                  <p className="font-mono font-bold text-base">{selectedAccount.phone}</p>
+              <div className="flex items-center gap-3 mb-3">
+                <div className="rounded-full bg-blue-100 p-2">
+                  {selectedPaymentMethod === 'telebirr' ? (
+                    <Smartphone className="h-5 w-5 text-blue-700" />
+                  ) : (
+                    <Building2 className="h-5 w-5 text-blue-700" />
+                  )}
                 </div>
-              ) : (
-                <div className="text-sm text-blue-700 space-y-0.5">
-                  <p className="font-semibold text-blue-800">{selectedAccount.bank_name}</p>
-                  <p>Account Holder: {selectedAccount.account_holder}</p>
-                  <p className="font-mono font-bold text-base">{selectedAccount.account_number}</p>
+                <div>
+                  <h3 className="font-semibold text-blue-800 text-sm">
+                    {selectedPaymentMethod === 'telebirr' ? 'Send to this Wallet' : 'Transfer to this Account'}
+                  </h3>
+                  <p className="text-xs text-blue-600">
+                    Send the exact amount shown below
+                  </p>
                 </div>
-              )}
+              </div>
+              <div className="border-t border-blue-200 pt-3">
+                {selectedPaymentMethod === 'telebirr' ? (
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-sm text-blue-700">
+                    <span className="text-blue-500">Provider</span>
+                    <span className="font-semibold text-blue-800 text-right">{selectedAccount.type}</span>
+                    <span className="text-blue-500">Account Name</span>
+                    <span className="font-semibold text-blue-800 text-right">{selectedAccount.account_name}</span>
+                    <span className="text-blue-500">Phone</span>
+                    <span className="font-mono font-bold text-blue-800 text-right text-base">{selectedAccount.phone}</span>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-sm text-blue-700">
+                    <span className="text-blue-500">Bank</span>
+                    <span className="font-semibold text-blue-800 text-right">{selectedAccount.bank_name}</span>
+                    <span className="text-blue-500">Account Holder</span>
+                    <span className="font-semibold text-blue-800 text-right">{selectedAccount.account_holder}</span>
+                    <span className="text-blue-500">Account Number</span>
+                    <span className="font-mono font-bold text-blue-800 text-right text-base">{selectedAccount.account_number}</span>
+                  </div>
+                )}
+              </div>
             </div>
           )}
 
@@ -402,27 +426,13 @@ function CartPage() {
   // STEP 1: PAYMENT METHOD SELECTION
   // =========================================================
   if (step === 'payment-method') {
-    const methods = [
-      {
-        id: 'cash',
-        label: 'Cash',
-        description: 'Pay at the counter',
-        icon: Banknote,
-      },
-      {
-        id: 'telebirr',
-        label: 'Digital Wallet',
-        description: 'Telebirr, M-Pesa, eBirr & more',
-        icon: Smartphone,
-      },
-      {
-        id: 'bank_transfer',
-        label: 'Bank Transfer',
-        description: 'Direct deposit to our account',
-        icon: Building2,
-      },
+    const methodOptions = [
+      { id: 'cash', label: 'Cash', icon: Banknote, desc: 'Pay at the counter' },
+      { id: 'telebirr', label: 'Digital Wallet', icon: Smartphone, desc: 'Telebirr, M-Pesa, eBirr & more' },
+      { id: 'bank_transfer', label: 'Bank Transfer', icon: Building2, desc: 'Direct deposit to our account' },
     ];
-
+    const selectedMethod = methodOptions.find(m => m.id === selectedPaymentMethod);
+    const Icon = selectedMethod?.icon;
     const wallets = paymentDetails?.wallets || [];
     const banks = paymentDetails?.banks || [];
     const showAccounts = selectedPaymentMethod === 'telebirr' || selectedPaymentMethod === 'bank_transfer';
@@ -441,129 +451,137 @@ function CartPage() {
 
           <div className="mb-8">
             <h1 className="text-2xl font-bold text-foreground mb-1">Choose Payment Method</h1>
-            <p className="text-muted-foreground text-sm">Select how you'd like to pay for your order</p>
+            <p className="text-muted-foreground text-sm">Select how you'd like to pay</p>
           </div>
 
-          <div className="space-y-3 mb-8">
-            {methods.map((method) => {
-              const selected = selectedPaymentMethod === method.id;
-              const Icon = method.icon;
-              return (
-                <button
-                  key={method.id}
-                  onClick={() => {
-                    setSelectedPaymentMethod(method.id);
-                    setSelectedAccount(null);
-                    setTransactionId('');
-                  }}
-                  className={`w-full flex items-center gap-4 rounded-xl border-2 p-4 text-left transition-all ${
-                    selected
-                      ? 'border-primary bg-primary/5'
-                      : 'border-border hover:border-primary/50 hover:bg-accent/50'
-                  }`}
-                >
-                  <div className={`rounded-xl p-3 ${
-                    selected ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
-                  }`}>
-                    <Icon className="h-6 w-6" />
+          <div className="space-y-6">
+            {/* Payment method select */}
+            <div className="space-y-2">
+              <Label className="text-sm font-medium text-foreground">Payment Method</Label>
+              <Select
+                value={selectedPaymentMethod}
+                onValueChange={(v) => {
+                  setSelectedPaymentMethod(v);
+                  setSelectedAccount(null);
+                  setTransactionId('');
+                }}
+              >
+                <SelectTrigger className="h-12 px-4 text-base">
+                  <div className="flex items-center gap-3">
+                    {Icon && <Icon className="h-5 w-5 text-muted-foreground" />}
+                    <SelectValue placeholder="Select payment method" />
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className={`font-semibold ${selected ? 'text-primary' : 'text-foreground'}`}>{method.label}</p>
-                    <p className="text-sm text-muted-foreground truncate">{method.description}</p>
-                  </div>
-                  <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-                    selected ? 'border-primary' : 'border-muted-foreground/30'
-                  }`}>
-                    {selected && <div className="w-2.5 h-2.5 rounded-full bg-primary" />}
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Account selection for non-cash methods */}
-          {showAccounts && (
-            <div className="mb-8">
-              <h2 className="text-sm font-semibold text-foreground mb-3">
-                {selectedPaymentMethod === 'telebirr' ? 'Select a Wallet' : 'Select a Bank Account'}
-              </h2>
-              {selectedPaymentMethod === 'telebirr' && wallets.length > 0 ? (
-                <div className="space-y-2">
-                  {wallets.map((w, i) => (
-                    <button
-                      key={i}
-                      onClick={() => setSelectedAccount(w)}
-                      className={`w-full flex items-center gap-4 rounded-xl border-2 p-4 text-left transition-all ${
-                        selectedAccount === w
-                          ? 'border-primary bg-primary/5'
-                          : 'border-border hover:border-primary/50'
-                      }`}
-                    >
-                      <div className={`rounded-xl p-3 ${
-                        selectedAccount === w ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
-                      }`}>
-                        <Smartphone className="h-5 w-5" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className={`font-semibold ${selectedAccount === w ? 'text-primary' : 'text-foreground'}`}>{w.type}</p>
-                        <p className="text-sm text-muted-foreground">{w.account_name}</p>
-                        <p className="text-xs text-muted-foreground font-mono">{w.phone}</p>
-                      </div>
-                      <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-                        selectedAccount === w ? 'border-primary' : 'border-muted-foreground/30'
-                      }`}>
-                        {selectedAccount === w && <div className="w-2.5 h-2.5 rounded-full bg-primary" />}
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              ) : selectedPaymentMethod === 'bank_transfer' && banks.length > 0 ? (
-                <div className="space-y-2">
-                  {banks.map((b, i) => (
-                    <button
-                      key={i}
-                      onClick={() => setSelectedAccount(b)}
-                      className={`w-full flex items-center gap-4 rounded-xl border-2 p-4 text-left transition-all ${
-                        selectedAccount === b
-                          ? 'border-primary bg-primary/5'
-                          : 'border-border hover:border-primary/50'
-                      }`}
-                    >
-                      <div className={`rounded-xl p-3 ${
-                        selectedAccount === b ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
-                      }`}>
-                        <Building2 className="h-5 w-5" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className={`font-semibold ${selectedAccount === b ? 'text-primary' : 'text-foreground'}`}>{b.bank_name}</p>
-                        <p className="text-sm text-muted-foreground">{b.account_holder}</p>
-                        <p className="text-xs text-muted-foreground font-mono">{b.account_number}</p>
-                      </div>
-                      <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-                        selectedAccount === b ? 'border-primary' : 'border-muted-foreground/30'
-                      }`}>
-                        {selectedAccount === b && <div className="w-2.5 h-2.5 rounded-full bg-primary" />}
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              ) : (
-                <div className="rounded-xl border border-dashed border-muted-foreground/30 p-6 text-center">
-                  <p className="text-sm text-muted-foreground">
-                    No accounts configured. Please contact the restaurant.
-                  </p>
-                </div>
-              )}
+                </SelectTrigger>
+                <SelectContent>
+                  {methodOptions.map((m) => {
+                    const MIcon = m.icon;
+                    return (
+                      <SelectItem key={m.id} value={m.id} className="py-3">
+                        <div className="flex items-center gap-3">
+                          <MIcon className="h-5 w-5 text-muted-foreground shrink-0" />
+                          <div>
+                            <p className="text-sm font-medium">{m.label}</p>
+                            <p className="text-xs text-muted-foreground">{m.desc}</p>
+                          </div>
+                        </div>
+                      </SelectItem>
+                    );
+                  })}
+                </SelectContent>
+              </Select>
             </div>
-          )}
 
-          <button
-            onClick={() => setStep('payment-details')}
-            disabled={selectedPaymentMethod === 'cash' ? false : !selectedAccount}
-            className="w-full rounded-xl bg-primary px-6 py-4 text-lg font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-primary/25"
-          >
-            Continue
-          </button>
+            {/* Account selection for non-cash */}
+            {showAccounts && (
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-foreground">
+                  {selectedPaymentMethod === 'telebirr' ? 'Wallet Account' : 'Bank Account'}
+                </Label>
+                {selectedPaymentMethod === 'telebirr' && wallets.length > 0 ? (
+                  <Select
+                    value={selectedAccount ? JSON.stringify(selectedAccount) : ''}
+                    onValueChange={(v) => setSelectedAccount(JSON.parse(v))}
+                  >
+                    <SelectTrigger className="h-12 px-4 text-base">
+                      <div className="flex items-center gap-3">
+                        <Wallet className="h-5 w-5 text-muted-foreground shrink-0" />
+                        <SelectValue placeholder="Choose a wallet" />
+                      </div>
+                    </SelectTrigger>
+                    <SelectContent>
+                      {wallets.map((w: any, i: number) => (
+                        <SelectItem key={i} value={JSON.stringify(w)} className="py-3">
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <Smartphone className="h-4 w-4 text-muted-foreground shrink-0" />
+                              <p className="text-sm font-medium">{w.type}</p>
+                            </div>
+                            <p className="text-xs text-muted-foreground pl-6">{w.account_name} — {w.phone}</p>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                ) : selectedPaymentMethod === 'bank_transfer' && banks.length > 0 ? (
+                  <Select
+                    value={selectedAccount ? JSON.stringify(selectedAccount) : ''}
+                    onValueChange={(v) => setSelectedAccount(JSON.parse(v))}
+                  >
+                    <SelectTrigger className="h-12 px-4 text-base">
+                      <div className="flex items-center gap-3">
+                        <Landmark className="h-5 w-5 text-muted-foreground shrink-0" />
+                        <SelectValue placeholder="Choose a bank account" />
+                      </div>
+                    </SelectTrigger>
+                    <SelectContent>
+                      {banks.map((b: any, i: number) => (
+                        <SelectItem key={i} value={JSON.stringify(b)} className="py-3">
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <Building2 className="h-4 w-4 text-muted-foreground shrink-0" />
+                              <p className="text-sm font-medium">{b.bank_name}</p>
+                            </div>
+                            <p className="text-xs text-muted-foreground pl-6">{b.account_holder} — {b.account_number}</p>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <div className="rounded-lg border border-dashed border-muted-foreground/30 p-4 text-center text-sm text-muted-foreground">
+                    No accounts configured. Please contact the restaurant.
+                  </div>
+                )}
+
+                {/* Show selected account details */}
+                {selectedAccount && (
+                  <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 mt-2">
+                    {selectedPaymentMethod === 'telebirr' ? (
+                      <div className="text-sm text-blue-700 space-y-0.5">
+                        <p className="font-semibold text-blue-800">{selectedAccount.type}</p>
+                        <p>Name: {selectedAccount.account_name}</p>
+                        <p className="font-mono font-bold">{selectedAccount.phone}</p>
+                      </div>
+                    ) : (
+                      <div className="text-sm text-blue-700 space-y-0.5">
+                        <p className="font-semibold text-blue-800">{selectedAccount.bank_name}</p>
+                        <p>Holder: {selectedAccount.account_holder}</p>
+                        <p className="font-mono font-bold">{selectedAccount.account_number}</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
+            <button
+              onClick={() => setStep('payment-details')}
+              disabled={selectedPaymentMethod === 'cash' ? false : !selectedAccount}
+              className="w-full rounded-xl bg-primary px-6 py-4 text-lg font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-primary/25"
+            >
+              Continue
+            </button>
+          </div>
         </div>
       </div>
     );
