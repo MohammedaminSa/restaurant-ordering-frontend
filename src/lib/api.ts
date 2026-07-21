@@ -378,6 +378,7 @@ export interface PlaceOrderRequest {
   special_instructions?: string;
   payment_method?: 'cash' | 'card' | 'digital_wallet' | 'online' | 'telebirr' | 'bank_transfer';
   transaction_id?: string;
+  payment_account?: Record<string, any>;
 }
 
 export interface PlacedOrder {
@@ -395,6 +396,8 @@ export interface PlacedOrder {
   total_amount: string;
   payment_method?: string;
   payment_status?: string;
+  transaction_id?: string;
+  payment_account?: Record<string, any>;
   special_instructions?: string;
   created_at: string;
   items: OrderItem[];
@@ -566,10 +569,13 @@ export interface PaymentResponse {
   session_id: string;
   amount: string;
   payment_method: string;
-  tip_amount: string;
+  tip_amount?: string;
   total_paid: string;
-  payment_date: string;
-  notes?: string;
+  bill_total?: string;
+  status: string;
+  transaction_id?: string;
+  created_at: string;
+  completed_at?: string;
 }
 
 /**
@@ -585,6 +591,14 @@ export const getSessionBill = async (sessionToken: string): Promise<ApiResponse<
  */
 export const recordPayment = async (data: PaymentRequest): Promise<ApiResponse<PaymentResponse>> => {
   const response = await api.post('/cashier/payments', data);
+  return response.data;
+};
+
+/**
+ * Approve pending payment (Protected - cashier)
+ */
+export const approvePayment = async (sessionToken: string): Promise<ApiResponse<PaymentResponse>> => {
+  const response = await api.post('/cashier/payments/approve', { session_token: sessionToken });
   return response.data;
 };
 

@@ -147,6 +147,7 @@ function CartPage() {
         special_instructions: orderInstructions.trim() || undefined,
         payment_method: selectedPaymentMethod as any,
         transaction_id: selectedPaymentMethod !== 'cash' ? transactionId.trim() : undefined,
+        payment_account: selectedPaymentMethod !== 'cash' && selectedAccount ? selectedAccount : undefined,
       });
 
       setStep('confirmation');
@@ -555,7 +556,7 @@ function CartPage() {
                               <Building2 className="h-4 w-4 text-muted-foreground shrink-0" />
                               <p className="text-sm font-medium">{b.bank_name}</p>
                             </div>
-                            <p className="text-xs text-muted-foreground pl-6">{b.account_holder}</p>
+                            <p className="text-xs text-muted-foreground pl-6">{b.account_holder} — {b.account_number}</p>
                           </div>
                         </SelectItem>
                       ))}
@@ -580,6 +581,7 @@ function CartPage() {
                       <div className="text-sm text-blue-700 space-y-0.5">
                         <p className="font-semibold text-blue-800">{selectedAccount.bank_name}</p>
                         <p>Holder: {selectedAccount.account_holder}</p>
+                        <p className="font-mono font-bold">{selectedAccount.account_number}</p>
                       </div>
                     )}
                   </div>
