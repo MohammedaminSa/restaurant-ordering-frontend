@@ -48,6 +48,7 @@ import { Route as DashboardAdminReportsRouteImport } from './routes/dashboard.ad
 import { Route as DashboardAdminOrdersRouteImport } from './routes/dashboard.admin.orders'
 import { Route as DashboardAdminMenuItemsRouteImport } from './routes/dashboard.admin.menu-items'
 import { Route as DashboardAdminKitchenRouteImport } from './routes/dashboard.admin.kitchen'
+import { Route as DashboardAdminCustomizationRouteImport } from './routes/dashboard.admin.customization'
 import { Route as DashboardAdminCashiersRouteImport } from './routes/dashboard.admin.cashiers'
 
 const OrdersRoute = OrdersRouteImport.update({
@@ -252,6 +253,12 @@ const DashboardAdminKitchenRoute = DashboardAdminKitchenRouteImport.update({
   path: '/kitchen',
   getParentRoute: () => DashboardAdminRoute,
 } as any)
+const DashboardAdminCustomizationRoute =
+  DashboardAdminCustomizationRouteImport.update({
+    id: '/customization',
+    path: '/customization',
+    getParentRoute: () => DashboardAdminRoute,
+  } as any)
 const DashboardAdminCashiersRoute = DashboardAdminCashiersRouteImport.update({
   id: '/cashiers',
   path: '/cashiers',
@@ -272,6 +279,7 @@ export interface FileRoutesByFullPath {
   '/scan/$qrCode': typeof ScanQrCodeRoute
   '/dashboard/': typeof DashboardIndexRoute
   '/dashboard/admin/cashiers': typeof DashboardAdminCashiersRoute
+  '/dashboard/admin/customization': typeof DashboardAdminCustomizationRoute
   '/dashboard/admin/kitchen': typeof DashboardAdminKitchenRoute
   '/dashboard/admin/menu-items': typeof DashboardAdminMenuItemsRoute
   '/dashboard/admin/orders': typeof DashboardAdminOrdersRoute
@@ -309,6 +317,7 @@ export interface FileRoutesByTo {
   '/scan/$qrCode': typeof ScanQrCodeRoute
   '/dashboard': typeof DashboardIndexRoute
   '/dashboard/admin/cashiers': typeof DashboardAdminCashiersRoute
+  '/dashboard/admin/customization': typeof DashboardAdminCustomizationRoute
   '/dashboard/admin/kitchen': typeof DashboardAdminKitchenRoute
   '/dashboard/admin/menu-items': typeof DashboardAdminMenuItemsRoute
   '/dashboard/admin/orders': typeof DashboardAdminOrdersRoute
@@ -352,6 +361,7 @@ export interface FileRoutesById {
   '/scan/$qrCode': typeof ScanQrCodeRoute
   '/dashboard/': typeof DashboardIndexRoute
   '/dashboard/admin/cashiers': typeof DashboardAdminCashiersRoute
+  '/dashboard/admin/customization': typeof DashboardAdminCustomizationRoute
   '/dashboard/admin/kitchen': typeof DashboardAdminKitchenRoute
   '/dashboard/admin/menu-items': typeof DashboardAdminMenuItemsRoute
   '/dashboard/admin/orders': typeof DashboardAdminOrdersRoute
@@ -396,6 +406,7 @@ export interface FileRouteTypes {
     | '/scan/$qrCode'
     | '/dashboard/'
     | '/dashboard/admin/cashiers'
+    | '/dashboard/admin/customization'
     | '/dashboard/admin/kitchen'
     | '/dashboard/admin/menu-items'
     | '/dashboard/admin/orders'
@@ -433,6 +444,7 @@ export interface FileRouteTypes {
     | '/scan/$qrCode'
     | '/dashboard'
     | '/dashboard/admin/cashiers'
+    | '/dashboard/admin/customization'
     | '/dashboard/admin/kitchen'
     | '/dashboard/admin/menu-items'
     | '/dashboard/admin/orders'
@@ -475,6 +487,7 @@ export interface FileRouteTypes {
     | '/scan/$qrCode'
     | '/dashboard/'
     | '/dashboard/admin/cashiers'
+    | '/dashboard/admin/customization'
     | '/dashboard/admin/kitchen'
     | '/dashboard/admin/menu-items'
     | '/dashboard/admin/orders'
@@ -789,6 +802,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardAdminKitchenRouteImport
       parentRoute: typeof DashboardAdminRoute
     }
+    '/dashboard/admin/customization': {
+      id: '/dashboard/admin/customization'
+      path: '/customization'
+      fullPath: '/dashboard/admin/customization'
+      preLoaderRoute: typeof DashboardAdminCustomizationRouteImport
+      parentRoute: typeof DashboardAdminRoute
+    }
     '/dashboard/admin/cashiers': {
       id: '/dashboard/admin/cashiers'
       path: '/cashiers'
@@ -801,6 +821,7 @@ declare module '@tanstack/react-router' {
 
 interface DashboardAdminRouteChildren {
   DashboardAdminCashiersRoute: typeof DashboardAdminCashiersRoute
+  DashboardAdminCustomizationRoute: typeof DashboardAdminCustomizationRoute
   DashboardAdminKitchenRoute: typeof DashboardAdminKitchenRoute
   DashboardAdminMenuItemsRoute: typeof DashboardAdminMenuItemsRoute
   DashboardAdminOrdersRoute: typeof DashboardAdminOrdersRoute
@@ -815,6 +836,7 @@ interface DashboardAdminRouteChildren {
 
 const DashboardAdminRouteChildren: DashboardAdminRouteChildren = {
   DashboardAdminCashiersRoute: DashboardAdminCashiersRoute,
+  DashboardAdminCustomizationRoute: DashboardAdminCustomizationRoute,
   DashboardAdminKitchenRoute: DashboardAdminKitchenRoute,
   DashboardAdminMenuItemsRoute: DashboardAdminMenuItemsRoute,
   DashboardAdminOrdersRoute: DashboardAdminOrdersRoute,

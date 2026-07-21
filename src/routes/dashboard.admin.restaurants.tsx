@@ -29,11 +29,6 @@ function AdminRestaurants() {
     tax_rate: "0",
     service_charge_rate: "0",
     timezone: "UTC",
-    telebirr_account_name: "",
-    telebirr_phone: "",
-    bank_name: "",
-    bank_account_holder: "",
-    bank_account_number: "",
   });
 
   const { data, isLoading, isError, error } = useQuery({
@@ -88,8 +83,6 @@ function AdminRestaurants() {
   const resetForm = () => setForm({
     name: "", description: "", address: "", phone: "", email: "", logo_url: "",
     currency: "USD", tax_rate: "0", service_charge_rate: "0", timezone: "UTC",
-    telebirr_account_name: "", telebirr_phone: "",
-    bank_name: "", bank_account_holder: "", bank_account_number: "",
   });
 
   const openCreate = () => {
@@ -111,11 +104,6 @@ function AdminRestaurants() {
       tax_rate: String(r.tax_rate || 0),
       service_charge_rate: String(r.service_charge_rate || 0),
       timezone: r.timezone || "UTC",
-      telebirr_account_name: r.payment_details?.telebirr?.account_name || "",
-      telebirr_phone: r.payment_details?.telebirr?.phone || "",
-      bank_name: r.payment_details?.bank_transfer?.bank_name || "",
-      bank_account_holder: r.payment_details?.bank_transfer?.account_holder || "",
-      bank_account_number: r.payment_details?.bank_transfer?.account_number || "",
     });
     setShowModal(true);
   };
@@ -133,17 +121,6 @@ function AdminRestaurants() {
       tax_rate: parseFloat(form.tax_rate) || 0,
       service_charge_rate: parseFloat(form.service_charge_rate) || 0,
       timezone: form.timezone,
-      payment_details: {
-        telebirr: {
-          account_name: form.telebirr_account_name || undefined,
-          phone: form.telebirr_phone || undefined,
-        },
-        bank_transfer: {
-          bank_name: form.bank_name || undefined,
-          account_holder: form.bank_account_holder || undefined,
-          account_number: form.bank_account_number || undefined,
-        },
-      },
     };
     if (editingRestaurant) {
       updateMutation.mutate({ id: editingRestaurant.id, data: payload });
@@ -365,49 +342,6 @@ function AdminRestaurants() {
                 <div>
                   <label className="block text-sm font-medium text-foreground mb-1">Service Charge (%)</label>
                   <input type="number" step="0.01" min="0" max="100" value={form.service_charge_rate} onChange={(e) => setForm({ ...form, service_charge_rate: e.target.value })} className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder-muted-foreground/60 focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring" />
-                </div>
-              </div>
-
-              <div className="border-t border-border pt-4">
-                <h3 className="font-serif text-base text-foreground mb-3">Payment Settings</h3>
-                <p className="text-xs text-muted-foreground mb-3">Configure merchant details displayed to customers for non-cash payments</p>
-                <div className="space-y-4">
-                  <div className="rounded-lg border border-border p-4">
-                    <h4 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
-                      <span className="flex h-5 w-5 items-center justify-center rounded bg-accent/10 text-accent text-xs font-bold">T</span>
-                      Telebirr
-                    </h4>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <div>
-                        <label className="block text-xs font-medium text-foreground mb-1">Account Name</label>
-                        <input type="text" value={form.telebirr_account_name} onChange={(e) => setForm({ ...form, telebirr_account_name: e.target.value })} placeholder="e.g. ABC Restaurant" className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder-muted-foreground/60 focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring" />
-                      </div>
-                      <div>
-                        <label className="block text-xs font-medium text-foreground mb-1">Phone Number</label>
-                        <input type="text" value={form.telebirr_phone} onChange={(e) => setForm({ ...form, telebirr_phone: e.target.value })} placeholder="e.g. 0911XXXXXX" className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder-muted-foreground/60 focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring" />
-                      </div>
-                    </div>
-                  </div>
-                  <div className="rounded-lg border border-border p-4">
-                    <h4 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
-                      <span className="flex h-5 w-5 items-center justify-center rounded bg-accent/10 text-accent text-xs font-bold">B</span>
-                      Bank Transfer
-                    </h4>
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                      <div>
-                        <label className="block text-xs font-medium text-foreground mb-1">Bank Name</label>
-                        <input type="text" value={form.bank_name} onChange={(e) => setForm({ ...form, bank_name: e.target.value })} placeholder="e.g. CBE" className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder-muted-foreground/60 focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring" />
-                      </div>
-                      <div>
-                        <label className="block text-xs font-medium text-foreground mb-1">Account Holder</label>
-                        <input type="text" value={form.bank_account_holder} onChange={(e) => setForm({ ...form, bank_account_holder: e.target.value })} placeholder="e.g. ABC Restaurant PLC" className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder-muted-foreground/60 focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring" />
-                      </div>
-                      <div>
-                        <label className="block text-xs font-medium text-foreground mb-1">Account Number</label>
-                        <input type="text" value={form.bank_account_number} onChange={(e) => setForm({ ...form, bank_account_number: e.target.value })} placeholder="e.g. 10000XXXXXX" className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder-muted-foreground/60 focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring" />
-                      </div>
-                    </div>
-                  </div>
                 </div>
               </div>
               <div className="flex justify-end gap-3 pt-2">

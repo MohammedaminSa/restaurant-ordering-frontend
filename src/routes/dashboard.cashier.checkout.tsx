@@ -32,7 +32,7 @@ export const Route = createFileRoute("/dashboard/cashier/checkout")({
 interface PaymentForm {
   session_token: string;
   amount: number;
-  payment_method: "cash" | "card" | "digital_wallet" | "telebirr" | "chapa" | "bank_transfer";
+  payment_method: "cash" | "card" | "digital_wallet" | "telebirr" | "bank_transfer";
   tip_amount: number;
   notes: string;
 }
@@ -425,12 +425,7 @@ function CashierCheckout() {
                         </SelectItem>
                         <SelectItem value="telebirr">
                           <div className="flex items-center gap-2">
-                            <Smartphone className="h-4 w-4" /> Telebirr
-                          </div>
-                        </SelectItem>
-                        <SelectItem value="chapa">
-                          <div className="flex items-center gap-2">
-                            <Wallet className="h-4 w-4" /> Chapa
+                            <Smartphone className="h-4 w-4" /> Digital Wallet
                           </div>
                         </SelectItem>
                         <SelectItem value="bank_transfer">
@@ -448,31 +443,28 @@ function CashierCheckout() {
                         <AlertCircle className="h-4 w-4 text-accent" />
                         Payment Instructions
                       </p>
-                      {form.payment_method === "telebirr" && paymentDetails.telebirr?.phone && (
-                        <div className="space-y-1 text-sm">
-                          <p className="text-muted-foreground">Send via Telebirr to:</p>
-                          {paymentDetails.telebirr.account_name && (
-                            <p><span className="text-muted-foreground">Account:</span> {paymentDetails.telebirr.account_name}</p>
-                          )}
-                          <p className="text-lg font-bold text-foreground tracking-wide">{paymentDetails.telebirr.phone}</p>
+                      {form.payment_method === "telebirr" && paymentDetails.wallets && paymentDetails.wallets.length > 0 ? (
+                        <div className="space-y-2 text-sm">
+                          {paymentDetails.wallets.map((w, i) => (
+                            <div key={i} className="space-y-0.5">
+                              <p className="font-medium text-foreground">{w.type}</p>
+                              <p><span className="text-muted-foreground">Account:</span> {w.account_name}</p>
+                              <p><span className="text-muted-foreground">Phone:</span> {w.phone}</p>
+                            </div>
+                          ))}
                         </div>
-                      )}
-                      {form.payment_method === "bank_transfer" && paymentDetails.bank_transfer?.account_number && (
-                        <div className="space-y-1 text-sm">
-                          <p className="text-muted-foreground">Transfer to:</p>
-                          <p><span className="text-muted-foreground">Bank:</span> {paymentDetails.bank_transfer.bank_name}</p>
-                          <p><span className="text-muted-foreground">Account Holder:</span> {paymentDetails.bank_transfer.account_holder}</p>
-                          <p><span className="text-muted-foreground">Account:</span> <span className="font-bold text-foreground">{paymentDetails.bank_transfer.account_number}</span></p>
+                      ) : form.payment_method === "bank_transfer" && paymentDetails.banks && paymentDetails.banks.length > 0 ? (
+                        <div className="space-y-2 text-sm">
+                          {paymentDetails.banks.map((b, i) => (
+                            <div key={i} className="space-y-0.5">
+                              <p><span className="text-muted-foreground">Bank:</span> {b.bank_name}</p>
+                              <p><span className="text-muted-foreground">Account Holder:</span> {b.account_holder}</p>
+                              <p><span className="text-muted-foreground">Account:</span> <span className="font-bold text-foreground">{b.account_number}</span></p>
+                            </div>
+                          ))}
                         </div>
-                      )}
-                      {form.payment_method === "chapa" && (
-                        <p className="text-sm text-muted-foreground">Process payment via Chapa at the counter.</p>
-                      )}
-                      {form.payment_method === "card" && (
-                        <p className="text-sm text-muted-foreground">Process card payment at the POS terminal.</p>
-                      )}
-                      {form.payment_method === "digital_wallet" && (
-                        <p className="text-sm text-muted-foreground">Process digital wallet payment at the counter.</p>
+                      ) : (
+                        <p className="text-sm text-muted-foreground">Payment details not configured.</p>
                       )}
                     </div>
                   )}

@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { useCart, fmt } from "@/lib/cart";
 import { placeOrder, createSession, getSessionByToken, type PaymentDetails } from "@/lib/api";
 import { toast } from "sonner";
-import { ShoppingBag, ArrowLeft, CheckCircle, Loader2, MapPin, User, Table as TableIcon, Trash2, Plus, Minus, Smartphone, Building2, Banknote, Wallet, CreditCard } from "lucide-react";
+import { ShoppingBag, ArrowLeft, CheckCircle, Loader2, MapPin, User, Table as TableIcon, Trash2, Plus, Minus, Smartphone, Building2, Banknote, CreditCard } from "lucide-react";
 import { SiteHeader } from "@/components/site-header";
 
 export const Route = createFileRoute("/cart")({
@@ -502,18 +502,6 @@ function CartPage() {
                   <span className="text-sm font-semibold text-foreground block">Bank Transfer</span>
                   <span className="text-xs text-muted-foreground">Direct deposit</span>
                 </button>
-                <button
-                  onClick={() => setSelectedPaymentMethod('chapa')}
-                  className={`rounded-lg border-2 p-3 text-center transition-all ${
-                    selectedPaymentMethod === 'chapa'
-                      ? 'border-primary bg-primary/5'
-                      : 'border-border hover:border-primary/50'
-                  }`}
-                >
-                  <Wallet className="h-6 w-6 mx-auto mb-1 text-foreground" />
-                  <span className="text-sm font-semibold text-foreground block">Chapa</span>
-                  <span className="text-xs text-muted-foreground">Online gateway</span>
-                </button>
               </div>
             </div>
 
@@ -521,23 +509,27 @@ function CartPage() {
             {selectedPaymentMethod !== 'cash' && (
               <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 mb-4">
                 <h4 className="font-semibold text-blue-800 mb-2">
-                  Transfer to {selectedPaymentMethod === 'telebirr' ? 'Telebirr' : selectedPaymentMethod === 'bank_transfer' ? 'Bank Account' : 'Chapa'}
+                  Transfer via {selectedPaymentMethod === 'telebirr' ? 'Digital Wallet' : 'Bank Transfer'}
                 </h4>
-                {selectedPaymentMethod === 'telebirr' && paymentDetails?.telebirr ? (
-                  <div className="text-sm text-blue-700 space-y-1">
-                    <p>Account: <strong>{paymentDetails.telebirr.account_name}</strong></p>
-                    <p>Phone: <strong>{paymentDetails.telebirr.phone}</strong></p>
+                {selectedPaymentMethod === 'telebirr' && paymentDetails?.wallets && paymentDetails.wallets.length > 0 ? (
+                  <div className="space-y-3">
+                    {paymentDetails.wallets.map((w, i) => (
+                      <div key={i} className="text-sm text-blue-700 space-y-0.5">
+                        <p className="font-medium text-blue-800">{w.type}</p>
+                        <p>Account: <strong>{w.account_name}</strong></p>
+                        <p>Phone: <strong>{w.phone}</strong></p>
+                      </div>
+                    ))}
                   </div>
-                ) : selectedPaymentMethod === 'bank_transfer' && paymentDetails?.bank_transfer ? (
-                  <div className="text-sm text-blue-700 space-y-1">
-                    <p>Bank: <strong>{paymentDetails.bank_transfer.bank_name}</strong></p>
-                    <p>Holder: <strong>{paymentDetails.bank_transfer.account_holder}</strong></p>
-                    <p>Account: <strong>{paymentDetails.bank_transfer.account_number}</strong></p>
-                  </div>
-                ) : selectedPaymentMethod === 'chapa' && paymentDetails?.chapa ? (
-                  <div className="text-sm text-blue-700 space-y-1">
-                    <p>Merchant: <strong>{paymentDetails.chapa.merchant_name}</strong></p>
-                    <p>ID: <strong>{paymentDetails.chapa.merchant_id}</strong></p>
+                ) : selectedPaymentMethod === 'bank_transfer' && paymentDetails?.banks && paymentDetails.banks.length > 0 ? (
+                  <div className="space-y-3">
+                    {paymentDetails.banks.map((b, i) => (
+                      <div key={i} className="text-sm text-blue-700 space-y-0.5">
+                        <p>Bank: <strong>{b.bank_name}</strong></p>
+                        <p>Holder: <strong>{b.account_holder}</strong></p>
+                        <p>Account: <strong>{b.account_number}</strong></p>
+                      </div>
+                    ))}
                   </div>
                 ) : (
                   <p className="text-sm text-blue-700">Payment details not configured. Please contact the restaurant.</p>
@@ -563,7 +555,7 @@ function CartPage() {
                 <label className="block text-sm font-medium text-foreground mb-1">Payment Method</label>
                 <input
                   type="text"
-                  value={selectedPaymentMethod === 'cash' ? 'Cash' : selectedPaymentMethod === 'telebirr' ? 'Telebirr' : selectedPaymentMethod === 'bank_transfer' ? 'Bank Transfer' : 'Chapa'}
+                  value={selectedPaymentMethod === 'cash' ? 'Cash' : selectedPaymentMethod === 'telebirr' ? 'Digital Wallet' : 'Bank Transfer'}
                   disabled
                   className="w-full rounded-lg border border-input bg-muted px-3 py-2 text-sm text-muted-foreground"
                 />

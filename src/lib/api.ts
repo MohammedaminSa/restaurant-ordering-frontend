@@ -376,7 +376,7 @@ export interface PlaceOrderRequest {
     special_instructions?: string;
   }[];
   special_instructions?: string;
-  payment_method?: 'cash' | 'card' | 'digital_wallet' | 'online' | 'telebirr' | 'chapa' | 'bank_transfer';
+  payment_method?: 'cash' | 'card' | 'digital_wallet' | 'online' | 'telebirr' | 'bank_transfer';
   transaction_id?: string;
 }
 
@@ -556,7 +556,7 @@ export interface SessionBill {
 export interface PaymentRequest {
   session_token: string;
   amount: number;
-  payment_method: 'cash' | 'card' | 'digital_wallet' | 'telebirr' | 'chapa' | 'bank_transfer';
+  payment_method: 'cash' | 'card' | 'digital_wallet' | 'telebirr' | 'bank_transfer';
   tip_amount?: number;
   notes?: string;
 }
@@ -829,10 +829,21 @@ export const deleteMenuItem = async (itemId: string): Promise<ApiResponse<null>>
 // RESTAURANT APIs (Super Admin)
 // ============================================
 
+export interface WalletConfig {
+  type: string;
+  account_name: string;
+  phone: string;
+}
+
+export interface BankConfig {
+  bank_name: string;
+  account_holder: string;
+  account_number: string;
+}
+
 export interface PaymentDetails {
-  telebirr?: { account_name?: string; phone?: string };
-  bank_transfer?: { bank_name?: string; account_holder?: string; account_number?: string };
-  chapa?: { merchant_name?: string; merchant_id?: string };
+  wallets: WalletConfig[];
+  banks: BankConfig[];
 }
 
 export interface Restaurant {
@@ -907,6 +918,14 @@ export const getRestaurantById = async (id: string): Promise<ApiResponse<Restaur
  */
 export const getMyRestaurant = async (): Promise<ApiResponse<Restaurant>> => {
   const response = await api.get('/restaurants/my');
+  return response.data;
+};
+
+/**
+ * Update own restaurant settings (restaurant_admin)
+ */
+export const updateMyRestaurant = async (data: { payment_details: PaymentDetails }): Promise<ApiResponse<Restaurant>> => {
+  const response = await api.patch('/restaurants/my', data);
   return response.data;
 };
 

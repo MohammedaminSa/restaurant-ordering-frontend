@@ -16,7 +16,6 @@ import {
   Download,
   Banknote,
   Smartphone,
-  Wallet,
   AlertCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -31,7 +30,6 @@ const methodIcons: Record<string, typeof CreditCard> = {
   card: CreditCard,
   digital_wallet: Smartphone,
   telebirr: Smartphone,
-  chapa: Wallet,
   bank_transfer: Banknote,
 };
 

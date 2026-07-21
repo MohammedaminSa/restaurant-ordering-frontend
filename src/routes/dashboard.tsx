@@ -25,6 +25,7 @@ import {
   X,
   Building2,
   Shield,
+  Smartphone,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useEffect, useState } from "react";
@@ -61,6 +62,7 @@ const navItems: NavItem[] = [
   { label: "Waiters", icon: UserCheck, to: "/dashboard/admin/waiters", roles: ["restaurant_admin"] },
   { label: "Cashiers", icon: DollarSign, to: "/dashboard/admin/cashiers", roles: ["restaurant_admin"] },
   { label: "Reports", icon: TrendingUp, to: "/dashboard/admin/reports", roles: ["restaurant_admin"] },
+  { label: "Customization", icon: Smartphone, to: "/dashboard/admin/customization", roles: ["restaurant_admin"] },
   { label: "Settings", icon: Settings, to: "/dashboard/admin/settings", roles: ["super_admin", "restaurant_admin"] },
   { label: "Overview", icon: LayoutDashboard, to: "/dashboard/cashier", roles: ["cashier"] },
   { label: "Orders", icon: ClipboardList, to: "/dashboard/cashier/orders", roles: ["cashier"] },
