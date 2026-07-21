@@ -18,7 +18,6 @@ import { Route as DashboardIndexRouteImport } from './routes/dashboard.index'
 import { Route as ScanQrCodeRouteImport } from './routes/scan.$qrCode'
 import { Route as ItemIdRouteImport } from './routes/item.$id'
 import { Route as DashboardWaiterRouteImport } from './routes/dashboard.waiter'
-import { Route as DashboardSettingsRouteImport } from './routes/dashboard.settings'
 import { Route as DashboardKitchenRouteImport } from './routes/dashboard.kitchen'
 import { Route as DashboardCashierRouteImport } from './routes/dashboard.cashier'
 import { Route as DashboardAdminRouteImport } from './routes/dashboard.admin'
@@ -94,11 +93,6 @@ const ItemIdRoute = ItemIdRouteImport.update({
 const DashboardWaiterRoute = DashboardWaiterRouteImport.update({
   id: '/waiter',
   path: '/waiter',
-  getParentRoute: () => DashboardRoute,
-} as any)
-const DashboardSettingsRoute = DashboardSettingsRouteImport.update({
-  id: '/settings',
-  path: '/settings',
   getParentRoute: () => DashboardRoute,
 } as any)
 const DashboardKitchenRoute = DashboardKitchenRouteImport.update({
@@ -273,7 +267,6 @@ export interface FileRoutesByFullPath {
   '/dashboard/admin': typeof DashboardAdminRouteWithChildren
   '/dashboard/cashier': typeof DashboardCashierRouteWithChildren
   '/dashboard/kitchen': typeof DashboardKitchenRouteWithChildren
-  '/dashboard/settings': typeof DashboardSettingsRoute
   '/dashboard/waiter': typeof DashboardWaiterRouteWithChildren
   '/item/$id': typeof ItemIdRoute
   '/scan/$qrCode': typeof ScanQrCodeRoute
@@ -312,7 +305,6 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/cart': typeof CartRoute
   '/orders': typeof OrdersRoute
-  '/dashboard/settings': typeof DashboardSettingsRoute
   '/item/$id': typeof ItemIdRoute
   '/scan/$qrCode': typeof ScanQrCodeRoute
   '/dashboard': typeof DashboardIndexRoute
@@ -355,7 +347,6 @@ export interface FileRoutesById {
   '/dashboard/admin': typeof DashboardAdminRouteWithChildren
   '/dashboard/cashier': typeof DashboardCashierRouteWithChildren
   '/dashboard/kitchen': typeof DashboardKitchenRouteWithChildren
-  '/dashboard/settings': typeof DashboardSettingsRoute
   '/dashboard/waiter': typeof DashboardWaiterRouteWithChildren
   '/item/$id': typeof ItemIdRoute
   '/scan/$qrCode': typeof ScanQrCodeRoute
@@ -400,7 +391,6 @@ export interface FileRouteTypes {
     | '/dashboard/admin'
     | '/dashboard/cashier'
     | '/dashboard/kitchen'
-    | '/dashboard/settings'
     | '/dashboard/waiter'
     | '/item/$id'
     | '/scan/$qrCode'
@@ -439,7 +429,6 @@ export interface FileRouteTypes {
     | '/auth'
     | '/cart'
     | '/orders'
-    | '/dashboard/settings'
     | '/item/$id'
     | '/scan/$qrCode'
     | '/dashboard'
@@ -481,7 +470,6 @@ export interface FileRouteTypes {
     | '/dashboard/admin'
     | '/dashboard/cashier'
     | '/dashboard/kitchen'
-    | '/dashboard/settings'
     | '/dashboard/waiter'
     | '/item/$id'
     | '/scan/$qrCode'
@@ -589,13 +577,6 @@ declare module '@tanstack/react-router' {
       path: '/waiter'
       fullPath: '/dashboard/waiter'
       preLoaderRoute: typeof DashboardWaiterRouteImport
-      parentRoute: typeof DashboardRoute
-    }
-    '/dashboard/settings': {
-      id: '/dashboard/settings'
-      path: '/settings'
-      fullPath: '/dashboard/settings'
-      preLoaderRoute: typeof DashboardSettingsRouteImport
       parentRoute: typeof DashboardRoute
     }
     '/dashboard/kitchen': {
@@ -916,7 +897,6 @@ interface DashboardRouteChildren {
   DashboardAdminRoute: typeof DashboardAdminRouteWithChildren
   DashboardCashierRoute: typeof DashboardCashierRouteWithChildren
   DashboardKitchenRoute: typeof DashboardKitchenRouteWithChildren
-  DashboardSettingsRoute: typeof DashboardSettingsRoute
   DashboardWaiterRoute: typeof DashboardWaiterRouteWithChildren
   DashboardIndexRoute: typeof DashboardIndexRoute
 }
@@ -925,7 +905,6 @@ const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardAdminRoute: DashboardAdminRouteWithChildren,
   DashboardCashierRoute: DashboardCashierRouteWithChildren,
   DashboardKitchenRoute: DashboardKitchenRouteWithChildren,
-  DashboardSettingsRoute: DashboardSettingsRoute,
   DashboardWaiterRoute: DashboardWaiterRouteWithChildren,
   DashboardIndexRoute: DashboardIndexRoute,
 }

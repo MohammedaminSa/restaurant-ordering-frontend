@@ -1,8 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { useAuthStore } from "@/lib/auth-store";
-import { updateUser } from "@/lib/api";
+import { updateUser, ROLE_LABELS } from "@/lib/api";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   User,
@@ -20,8 +21,7 @@ export const Route = createFileRoute("/dashboard/kitchen/settings")({
 });
 
 function KitchenSettings() {
-  const { user, setUser } = useAuthStore();
-  const { logout } = useAuthStore();
+  const { user, setUser, logout } = useAuthStore();
   const [isSaving, setIsSaving] = useState(false);
   const [profile, setProfile] = useState({
     name: user?.name || "",
@@ -64,6 +64,8 @@ function KitchenSettings() {
     toast.success("Logged out");
   };
 
+  if (!user) return null;
+
   return (
     <div className="space-y-6 max-w-2xl">
       <div>
@@ -77,17 +79,28 @@ function KitchenSettings() {
           <CardDescription>Update your personal information</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-foreground mb-1.5">Full Name</label>
-            <input type="text" value={profile.name} onChange={(e) => setProfile((p) => ({ ...p, name: e.target.value }))} className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm placeholder-muted-foreground/60 focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring" />
+          <div className="flex items-center gap-4 p-4 rounded-lg bg-accent/5">
+            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-accent/10 text-accent text-lg font-bold">
+              {user.name?.charAt(0) || "U"}
+            </div>
+            <div>
+              <p className="font-semibold text-lg">{user.name}</p>
+              <Badge variant="secondary">{ROLE_LABELS[user.role as keyof typeof ROLE_LABELS] || user.role}</Badge>
+            </div>
           </div>
-          <div>
-            <label className="block text-sm font-medium text-foreground mb-1.5">Email</label>
-            <input type="email" value={profile.email} onChange={(e) => setProfile((p) => ({ ...p, email: e.target.value }))} className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm placeholder-muted-foreground/60 focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring" />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-foreground mb-1.5">Phone</label>
-            <input type="tel" value={profile.phone} onChange={(e) => setProfile((p) => ({ ...p, phone: e.target.value }))} className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm placeholder-muted-foreground/60 focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring" />
+          <div className="space-y-3">
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-1.5">Full Name</label>
+              <input type="text" value={profile.name} onChange={(e) => setProfile((p) => ({ ...p, name: e.target.value }))} className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground placeholder-muted-foreground/60 focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-1.5">Email</label>
+              <input type="email" value={profile.email} onChange={(e) => setProfile((p) => ({ ...p, email: e.target.value }))} className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground placeholder-muted-foreground/60 focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-1.5">Phone</label>
+              <input type="tel" value={profile.phone} onChange={(e) => setProfile((p) => ({ ...p, phone: e.target.value }))} className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground placeholder-muted-foreground/60 focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring" />
+            </div>
           </div>
           <Button onClick={handleSaveProfile} disabled={isSaving}>
             {isSaving ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Save className="h-4 w-4 mr-1" />}Save Changes

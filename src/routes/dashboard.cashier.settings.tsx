@@ -1,28 +1,21 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { useAuthStore } from "@/lib/auth-store";
-import { updateUser } from "@/lib/api";
+import { updateUser, ROLE_LABELS } from "@/lib/api";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
 import {
-  Settings,
   User,
   Shield,
-  Mail,
-  Phone,
   Bell,
-  Moon,
   LogOut,
   Save,
   Loader2,
   DollarSign,
   Printer,
+  Mail,
 } from "lucide-react";
-import { ROLE_LABELS } from "@/lib/api";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/dashboard/cashier/settings")({
@@ -30,169 +23,160 @@ export const Route = createFileRoute("/dashboard/cashier/settings")({
 });
 
 function CashierSettings() {
-  const { user, setUser } = useAuthStore();
+  const { user, setUser, logout } = useAuthStore();
   const [isSaving, setIsSaving] = useState(false);
-  const [name, setName] = useState(user?.name || "");
-  const [email, setEmail] = useState(user?.email || "");
-  const [phone, setPhone] = useState(user?.phone || "");
+  const [profile, setProfile] = useState({
+    name: user?.name || "",
+    email: user?.email || "",
+    phone: user?.phone || "",
+  });
 
-  const handleSave = async () => {
+  const handleSaveProfile = async () => {
     if (!user) return;
     setIsSaving(true);
     try {
       const res = await updateUser(user.id, {
-        name,
-        email,
-        phone: phone || undefined,
+        name: profile.name,
+        email: profile.email,
+        phone: profile.phone || undefined,
       });
       if (res.data) setUser(res.data as any);
-      toast.success("Settings saved successfully");
+      toast.success("Profile updated");
     } catch (err: any) {
-      toast.error(err?.message || "Failed to save settings");
+      toast.error(err?.message || "Failed to update profile");
     } finally {
       setIsSaving(false);
     }
   };
 
+  const handleLogout = async () => {
+    await logout();
+    toast.success("Logged out");
+  };
+
   if (!user) return null;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-2xl">
       <div>
         <h1 className="font-serif text-3xl text-foreground">Settings</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
+        <p className="text-sm text-muted-foreground mt-1">
           Manage your cashier profile and preferences
         </p>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <User className="h-5 w-5" />
-              Cashier Profile
-            </CardTitle>
-            <CardDescription>
-              Your account information
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center gap-4 p-4 rounded-lg bg-accent/5">
-              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-accent/10 text-accent text-lg font-bold">
-                {user.name?.charAt(0) || "U"}
-              </div>
-              <div>
-                <p className="font-semibold text-lg">{user.name}</p>
-                <Badge variant="secondary">{ROLE_LABELS[user.role as keyof typeof ROLE_LABELS] || user.role}</Badge>
-              </div>
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <User className="h-4 w-4" />
+            Profile
+          </CardTitle>
+          <CardDescription>Update your personal information</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center gap-4 p-4 rounded-lg bg-accent/5">
+            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-accent/10 text-accent text-lg font-bold">
+              {user.name?.charAt(0) || "U"}
             </div>
+            <div>
+              <p className="font-semibold text-lg">{user.name}</p>
+              <Badge variant="secondary">{ROLE_LABELS[user.role as keyof typeof ROLE_LABELS] || user.role}</Badge>
+            </div>
+          </div>
+          <div className="space-y-3">
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-1.5">Full Name</label>
+              <input
+                type="text"
+                value={profile.name}
+                onChange={(e) => setProfile((p) => ({ ...p, name: e.target.value }))}
+                className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground placeholder-muted-foreground/60 focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-1.5">Email</label>
+              <input
+                type="email"
+                value={profile.email}
+                onChange={(e) => setProfile((p) => ({ ...p, email: e.target.value }))}
+                className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground placeholder-muted-foreground/60 focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-1.5">Phone</label>
+              <input
+                type="tel"
+                value={profile.phone}
+                onChange={(e) => setProfile((p) => ({ ...p, phone: e.target.value }))}
+                placeholder="+1 234 567 890"
+                className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground placeholder-muted-foreground/60 focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring"
+              />
+            </div>
+          </div>
+          <Button onClick={handleSaveProfile} disabled={isSaving}>
+            {isSaving ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Save className="h-4 w-4 mr-1" />}
+            Save Changes
+          </Button>
+        </CardContent>
+      </Card>
 
-              <div className="space-y-3">
-                <div className="space-y-1.5">
-                  <Label htmlFor="name">Full Name</Label>
-                  <Input id="name" value={name} onChange={(e) => setName(e.target.value)} />
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <DollarSign className="h-4 w-4" />
+            Payment Preferences
+          </CardTitle>
+          <CardDescription>Default payment settings</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {[
+            { icon: Printer, label: "Auto-print receipt", desc: "Automatically print after payment" },
+            { icon: Bell, label: "Payment notifications", desc: "Show confirmation on payment" },
+          ].map((item) => (
+            <div key={item.label} className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="rounded-lg bg-accent/10 p-2">
+                  <item.icon className="h-4 w-4 text-accent" />
                 </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="email">Email Address</Label>
-                  <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="phone">Phone Number</Label>
-                  <Input id="phone" type="tel" placeholder="+1 234 567 890" value={phone} onChange={(e) => setPhone(e.target.value)} />
+                <div>
+                  <p className="text-sm font-medium text-foreground">{item.label}</p>
+                  <p className="text-xs text-muted-foreground">{item.desc}</p>
                 </div>
               </div>
+              <Button variant="outline" size="sm">Enable</Button>
+            </div>
+          ))}
+        </CardContent>
+      </Card>
 
-              <Button onClick={handleSave} disabled={isSaving}>
-                {isSaving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
-                {isSaving ? "Saving..." : "Save Changes"}
-              </Button>
-          </CardContent>
-        </Card>
-
-        <div className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <DollarSign className="h-5 w-5" />
-                Payment Preferences
-              </CardTitle>
-              <CardDescription>
-                Default payment settings
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="rounded-lg bg-accent/10 p-2">
-                    <Printer className="h-4 w-4 text-accent" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium">Auto-print receipt</p>
-                    <p className="text-xs text-muted-foreground">Automatically print after payment</p>
-                  </div>
-                </div>
-                <Button variant="outline" size="sm">Enable</Button>
-              </div>
-
-              <Separator />
-
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="rounded-lg bg-accent/10 p-2">
-                    <Bell className="h-4 w-4 text-accent" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium">Payment notifications</p>
-                    <p className="text-xs text-muted-foreground">Show confirmation on payment</p>
-                  </div>
-                </div>
-                <Button variant="outline" size="sm">Enable</Button>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Shield className="h-5 w-5" />
-                Account
-              </CardTitle>
-              <CardDescription>
-                Account security and session
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="rounded-lg bg-accent/10 p-2">
-                    <Mail className="h-4 w-4 text-accent" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium">Email Notifications</p>
-                    <p className="text-xs text-muted-foreground">Receive daily transaction report</p>
-                  </div>
-                </div>
-                <Button variant="outline" size="sm">Configure</Button>
-              </div>
-
-              <Separator />
-
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="rounded-lg bg-accent/10 p-2">
-                    <LogOut className="h-4 w-4 text-accent" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium">Active Session</p>
-                    <p className="text-xs text-muted-foreground">Currently signed in</p>
-                  </div>
-                </div>
-                <Badge variant="secondary" className="bg-emerald-50 text-emerald-700">Active</Badge>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Shield className="h-4 w-4" />
+            Account
+          </CardTitle>
+          <CardDescription>Account information and security</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="flex items-center justify-between rounded-lg bg-muted/50 p-3">
+            <span className="text-sm text-foreground">Role</span>
+            <span className="text-sm font-medium capitalize flex items-center gap-1.5">
+              <DollarSign className="h-3.5 w-3.5" />Cashier
+            </span>
+          </div>
+          <div className="flex items-center justify-between rounded-lg bg-muted/50 p-3">
+            <span className="text-sm text-foreground">Restaurant ID</span>
+            <span className="text-sm text-muted-foreground font-mono">{user?.restaurant_id?.slice(0, 8)}...</span>
+          </div>
+          <div className="flex items-center justify-between rounded-lg bg-muted/50 p-3">
+            <span className="text-sm text-foreground">Status</span>
+            <span className="text-sm font-medium text-emerald-600">Active</span>
+          </div>
+          <Button onClick={handleLogout} variant="outline" className="w-full border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20">
+            <LogOut className="h-4 w-4 mr-1" />Sign Out
+          </Button>
+        </CardContent>
+      </Card>
     </div>
   );
 }

@@ -145,7 +145,7 @@ function DashboardLayout() {
             to={item.to as any}
             onClick={() => setSidebarOpen(false)}
             className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-white/70 transition-colors hover:bg-white/15 hover:text-white [&.active]:bg-white [&.active]:text-ember"
-            activeOptions={{ exact: item.to === "/dashboard" }}
+            activeOptions={{ exact: item.label === "Overview" }}
           >
             <item.icon className="h-4 w-4 shrink-0" />
             <span className="truncate">{item.label}</span>
