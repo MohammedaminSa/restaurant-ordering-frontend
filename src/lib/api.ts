@@ -377,6 +377,7 @@ export interface PlaceOrderRequest {
   }[];
   special_instructions?: string;
   payment_method?: 'cash' | 'card' | 'digital_wallet' | 'online' | 'telebirr' | 'chapa' | 'bank_transfer';
+  transaction_id?: string;
 }
 
 export interface PlacedOrder {

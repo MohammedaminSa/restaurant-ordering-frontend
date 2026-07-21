@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { useCart, fmt } from "@/lib/cart";
 import { placeOrder, createSession, getSessionByToken, type PaymentDetails } from "@/lib/api";
 import { toast } from "sonner";
-import { ShoppingBag, ArrowLeft, CheckCircle, Loader2, MapPin, User, Table as TableIcon, Trash2, Plus, Minus, Smartphone, Building2, CreditCard, Banknote, Wallet } from "lucide-react";
+import { ShoppingBag, ArrowLeft, CheckCircle, Loader2, MapPin, User, Table as TableIcon, Trash2, Plus, Minus, Smartphone, Building2, Banknote, Wallet, CreditCard } from "lucide-react";
 import { SiteHeader } from "@/components/site-header";
 
 export const Route = createFileRoute("/cart")({
@@ -15,15 +15,18 @@ function CartPage() {
   const { items, count, total, clear, updateQuantity, remove } = useCart();
   const [submitting, setSubmitting] = useState(false);
   const [orderInstructions, setOrderInstructions] = useState("");
-  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [showPaymentDialog, setShowPaymentDialog] = useState(false);
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
   const [orderNumber, setOrderNumber] = useState<number | null>(null);
   const [showCustomerForm, setShowCustomerForm] = useState(false);
   const [pendingTableInfo, setPendingTableInfo] = useState<any>(null);
-  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string>('cash');
-  const [paymentConfirmed, setPaymentConfirmed] = useState(false);
   const [paymentDetails, setPaymentDetails] = useState<PaymentDetails | null>(null);
   const [fetchingSession, setFetchingSession] = useState(false);
+
+  // Payment form state (inside dialog)
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string>('cash');
+  const [transactionId, setTransactionId] = useState('');
+  const [payerName, setPayerName] = useState('');
 
   const sessionToken = localStorage.getItem("sessionToken");
   const sessionDataStr = localStorage.getItem("sessionData");
@@ -105,21 +108,24 @@ function CartPage() {
       return;
     }
 
-    // Validate payment method selection
-    if (selectedPaymentMethod !== 'cash' && !paymentConfirmed) {
-      toast.error("Please confirm your payment before placing the order");
-      return;
-    }
+    // Initialize payment form with session data
+    setSelectedPaymentMethod('cash');
+    setTransactionId('');
+    setPayerName(sessionData?.customer_name || '');
 
-    // Session exists, show confirmation dialog to place order
-    setShowConfirmDialog(true);
+    // Show payment form dialog
+    setShowPaymentDialog(true);
   };
 
   const handleConfirmOrder = async () => {
-    setShowConfirmDialog(false);
-
     if (!sessionToken) {
       toast.error("Session not found");
+      return;
+    }
+
+    // Validate non-cash payment requires transaction ID
+    if (selectedPaymentMethod !== 'cash' && !transactionId.trim()) {
+      toast.error("Please enter the transaction ID");
       return;
     }
 
@@ -137,8 +143,10 @@ function CartPage() {
         items: orderItems,
         special_instructions: orderInstructions.trim() || undefined,
         payment_method: selectedPaymentMethod as any,
+        transaction_id: selectedPaymentMethod !== 'cash' ? transactionId.trim() : undefined,
       });
 
+      setShowPaymentDialog(false);
       setOrderNumber(response.data.order_number);
       setShowSuccessDialog(true);
       clear();
@@ -398,99 +406,6 @@ function CartPage() {
           />
         </div>
 
-        {/* Payment Method */}
-        <div className="rounded-xl border border-border bg-card p-6 mb-4">
-          <h2 className="font-semibold text-lg text-foreground mb-4">Payment Method</h2>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <button
-              onClick={() => { setSelectedPaymentMethod('cash'); setPaymentConfirmed(false); }}
-              className={`rounded-lg border-2 p-4 text-center transition-all ${
-                selectedPaymentMethod === 'cash'
-                  ? 'border-primary bg-primary/5'
-                  : 'border-border hover:border-primary/50'
-              }`}
-            >
-              <Banknote className="h-6 w-6 mx-auto mb-2 text-foreground" />
-              <span className="text-sm font-semibold text-foreground block">Cash</span>
-              <span className="text-xs text-muted-foreground">Pay at counter</span>
-            </button>
-
-            <button
-              onClick={() => { setSelectedPaymentMethod('telebirr'); setPaymentConfirmed(false); }}
-              className={`rounded-lg border-2 p-4 text-center transition-all ${
-                selectedPaymentMethod === 'telebirr'
-                  ? 'border-primary bg-primary/5'
-                  : 'border-border hover:border-primary/50'
-              }`}
-            >
-              <Smartphone className="h-6 w-6 mx-auto mb-2 text-foreground" />
-              <span className="text-sm font-semibold text-foreground block">Telebirr</span>
-              <span className="text-xs text-muted-foreground">Mobile money</span>
-            </button>
-
-            <button
-              onClick={() => { setSelectedPaymentMethod('bank_transfer'); setPaymentConfirmed(false); }}
-              className={`rounded-lg border-2 p-4 text-center transition-all ${
-                selectedPaymentMethod === 'bank_transfer'
-                  ? 'border-primary bg-primary/5'
-                  : 'border-border hover:border-primary/50'
-              }`}
-            >
-              <Building2 className="h-6 w-6 mx-auto mb-2 text-foreground" />
-              <span className="text-sm font-semibold text-foreground block">Bank Transfer</span>
-              <span className="text-xs text-muted-foreground">Direct deposit</span>
-            </button>
-
-            <button
-              onClick={() => { setSelectedPaymentMethod('chapa'); setPaymentConfirmed(false); }}
-              className={`rounded-lg border-2 p-4 text-center transition-all ${
-                selectedPaymentMethod === 'chapa'
-                  ? 'border-primary bg-primary/5'
-                  : 'border-border hover:border-primary/50'
-              }`}
-            >
-              <Wallet className="h-6 w-6 mx-auto mb-2 text-foreground" />
-              <span className="text-sm font-semibold text-foreground block">Chapa</span>
-              <span className="text-xs text-muted-foreground">Online gateway</span>
-            </button>
-          </div>
-
-          {/* Payment Instructions for non-cash methods */}
-          {selectedPaymentMethod !== 'cash' && (
-            <div className="mt-4 rounded-lg border border-blue-200 bg-blue-50 p-4">
-              <h3 className="font-semibold text-blue-800 mb-2">Pay via {selectedPaymentMethod === 'telebirr' ? 'Telebirr' : selectedPaymentMethod === 'bank_transfer' ? 'Bank Transfer' : 'Chapa'}</h3>
-              {selectedPaymentMethod === 'telebirr' && paymentDetails?.telebirr ? (
-                <div className="text-sm text-blue-700 space-y-1">
-                  <p>Account Name: <strong>{paymentDetails.telebirr.account_name}</strong></p>
-                  <p>Phone Number: <strong>{paymentDetails.telebirr.phone}</strong></p>
-                </div>
-              ) : selectedPaymentMethod === 'bank_transfer' && paymentDetails?.bank_transfer ? (
-                <div className="text-sm text-blue-700 space-y-1">
-                  <p>Bank: <strong>{paymentDetails.bank_transfer.bank_name}</strong></p>
-                  <p>Account Holder: <strong>{paymentDetails.bank_transfer.account_holder}</strong></p>
-                  <p>Account Number: <strong>{paymentDetails.bank_transfer.account_number}</strong></p>
-                </div>
-              ) : selectedPaymentMethod === 'chapa' && paymentDetails?.chapa ? (
-                <div className="text-sm text-blue-700 space-y-1">
-                  <p>Merchant: <strong>{paymentDetails.chapa.merchant_name}</strong></p>
-                  <p>Merchant ID: <strong>{paymentDetails.chapa.merchant_id}</strong></p>
-                </div>
-              ) : (
-                <p className="text-sm text-blue-700">Payment details not configured. Please contact the restaurant.</p>
-              )}
-              <label className="flex items-center gap-2 mt-3 pt-3 border-t border-blue-200 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={paymentConfirmed}
-                  onChange={(e) => setPaymentConfirmed(e.target.checked)}
-                  className="rounded border-blue-300 text-blue-600 focus:ring-blue-500"
-                />
-                <span className="text-sm text-blue-800 font-medium">I have completed the payment</span>
-              </label>
-            </div>
-          )}
-        </div>
-
         {/* Price Breakdown */}
         <div className="rounded-xl border border-border bg-card p-6 mb-4">
           <h2 className="font-semibold text-lg text-foreground mb-4">Payment Summary</h2>
@@ -541,30 +456,164 @@ function CartPage() {
         )}
       </div>
 
-      {/* Confirm Dialog */}
-      {showConfirmDialog && (
+      {/* Payment Form Dialog */}
+      {showPaymentDialog && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-background rounded-xl border border-border p-6 max-w-md w-full mx-4">
-            <h2 className="text-xl font-bold text-foreground mb-2">Confirm Your Order</h2>
-            <p className="text-foreground mb-2">Are you sure you want to place this order?</p>
-            <div className="rounded-lg bg-muted p-3 mb-4 text-sm space-y-1">
-              <p className="text-muted-foreground">{count} {count === 1 ? 'item' : 'items'} • Total: {fmt(grandTotal, currency)}</p>
-              <p className="text-muted-foreground">
-                Payment: <span className="font-semibold text-foreground capitalize">{selectedPaymentMethod === 'cash' ? 'Cash (Pay at counter)' : `${selectedPaymentMethod} (Pre-paid)`}</span>
-              </p>
+          <div className="bg-background rounded-xl border border-border p-6 max-w-lg w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <h2 className="text-xl font-bold text-foreground mb-4">Complete Payment</h2>
+
+            {/* Step 1: Select Payment Method */}
+            <div className="mb-4">
+              <h3 className="font-semibold text-foreground mb-3">Select Payment Method</h3>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  onClick={() => { setSelectedPaymentMethod('cash'); setTransactionId(''); }}
+                  className={`rounded-lg border-2 p-3 text-center transition-all ${
+                    selectedPaymentMethod === 'cash'
+                      ? 'border-primary bg-primary/5'
+                      : 'border-border hover:border-primary/50'
+                  }`}
+                >
+                  <Banknote className="h-6 w-6 mx-auto mb-1 text-foreground" />
+                  <span className="text-sm font-semibold text-foreground block">Cash</span>
+                  <span className="text-xs text-muted-foreground">Pay at counter</span>
+                </button>
+                <button
+                  onClick={() => setSelectedPaymentMethod('telebirr')}
+                  className={`rounded-lg border-2 p-3 text-center transition-all ${
+                    selectedPaymentMethod === 'telebirr'
+                      ? 'border-primary bg-primary/5'
+                      : 'border-border hover:border-primary/50'
+                  }`}
+                >
+                  <Smartphone className="h-6 w-6 mx-auto mb-1 text-foreground" />
+                  <span className="text-sm font-semibold text-foreground block">Telebirr</span>
+                  <span className="text-xs text-muted-foreground">Mobile money</span>
+                </button>
+                <button
+                  onClick={() => setSelectedPaymentMethod('bank_transfer')}
+                  className={`rounded-lg border-2 p-3 text-center transition-all ${
+                    selectedPaymentMethod === 'bank_transfer'
+                      ? 'border-primary bg-primary/5'
+                      : 'border-border hover:border-primary/50'
+                  }`}
+                >
+                  <Building2 className="h-6 w-6 mx-auto mb-1 text-foreground" />
+                  <span className="text-sm font-semibold text-foreground block">Bank Transfer</span>
+                  <span className="text-xs text-muted-foreground">Direct deposit</span>
+                </button>
+                <button
+                  onClick={() => setSelectedPaymentMethod('chapa')}
+                  className={`rounded-lg border-2 p-3 text-center transition-all ${
+                    selectedPaymentMethod === 'chapa'
+                      ? 'border-primary bg-primary/5'
+                      : 'border-border hover:border-primary/50'
+                  }`}
+                >
+                  <Wallet className="h-6 w-6 mx-auto mb-1 text-foreground" />
+                  <span className="text-sm font-semibold text-foreground block">Chapa</span>
+                  <span className="text-xs text-muted-foreground">Online gateway</span>
+                </button>
+              </div>
             </div>
-            <div className="flex gap-3">
+
+            {/* Payment Instructions for non-cash */}
+            {selectedPaymentMethod !== 'cash' && (
+              <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 mb-4">
+                <h4 className="font-semibold text-blue-800 mb-2">
+                  Transfer to {selectedPaymentMethod === 'telebirr' ? 'Telebirr' : selectedPaymentMethod === 'bank_transfer' ? 'Bank Account' : 'Chapa'}
+                </h4>
+                {selectedPaymentMethod === 'telebirr' && paymentDetails?.telebirr ? (
+                  <div className="text-sm text-blue-700 space-y-1">
+                    <p>Account: <strong>{paymentDetails.telebirr.account_name}</strong></p>
+                    <p>Phone: <strong>{paymentDetails.telebirr.phone}</strong></p>
+                  </div>
+                ) : selectedPaymentMethod === 'bank_transfer' && paymentDetails?.bank_transfer ? (
+                  <div className="text-sm text-blue-700 space-y-1">
+                    <p>Bank: <strong>{paymentDetails.bank_transfer.bank_name}</strong></p>
+                    <p>Holder: <strong>{paymentDetails.bank_transfer.account_holder}</strong></p>
+                    <p>Account: <strong>{paymentDetails.bank_transfer.account_number}</strong></p>
+                  </div>
+                ) : selectedPaymentMethod === 'chapa' && paymentDetails?.chapa ? (
+                  <div className="text-sm text-blue-700 space-y-1">
+                    <p>Merchant: <strong>{paymentDetails.chapa.merchant_name}</strong></p>
+                    <p>ID: <strong>{paymentDetails.chapa.merchant_id}</strong></p>
+                  </div>
+                ) : (
+                  <p className="text-sm text-blue-700">Payment details not configured. Please contact the restaurant.</p>
+                )}
+              </div>
+            )}
+
+            {/* Step 2: Payment Completion Form */}
+            <div className="space-y-4">
+              <h3 className="font-semibold text-foreground">Payment Details</h3>
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-1">Your Name</label>
+                <input
+                  type="text"
+                  value={payerName}
+                  onChange={(e) => setPayerName(e.target.value)}
+                  className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring"
+                  placeholder="Enter your name"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-1">Payment Method</label>
+                <input
+                  type="text"
+                  value={selectedPaymentMethod === 'cash' ? 'Cash' : selectedPaymentMethod === 'telebirr' ? 'Telebirr' : selectedPaymentMethod === 'bank_transfer' ? 'Bank Transfer' : 'Chapa'}
+                  disabled
+                  className="w-full rounded-lg border border-input bg-muted px-3 py-2 text-sm text-muted-foreground"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-1">Amount ({currency || 'ETB'})</label>
+                <input
+                  type="number"
+                  value={grandTotal.toFixed(2)}
+                  disabled
+                  className="w-full rounded-lg border border-input bg-muted px-3 py-2 text-sm font-bold text-foreground"
+                />
+                <p className="text-xs text-muted-foreground mt-1">Total menu price — must match exactly</p>
+              </div>
+              {selectedPaymentMethod !== 'cash' && (
+                <div>
+                  <label className="block text-sm font-medium text-foreground mb-1">Transaction ID / Reference *</label>
+                  <input
+                    type="text"
+                    value={transactionId}
+                    onChange={(e) => setTransactionId(e.target.value)}
+                    className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring"
+                    placeholder="Enter your transaction reference number"
+                    required
+                  />
+                </div>
+              )}
+            </div>
+
+            <div className="flex gap-3 mt-6">
               <button
-                onClick={() => setShowConfirmDialog(false)}
-                className="flex-1 rounded-lg border border-border bg-background px-4 py-2 font-semibold text-foreground hover:bg-accent"
+                onClick={() => setShowPaymentDialog(false)}
+                disabled={submitting}
+                className="flex-1 rounded-lg border border-border bg-background px-4 py-2 font-semibold text-foreground hover:bg-accent disabled:opacity-50"
               >
                 Cancel
               </button>
               <button
                 onClick={handleConfirmOrder}
-                className="flex-1 rounded-lg bg-primary px-4 py-2 font-semibold text-primary-foreground hover:bg-primary/90"
+                disabled={submitting || !payerName.trim() || (selectedPaymentMethod !== 'cash' && !transactionId.trim())}
+                className="flex-1 rounded-lg bg-primary px-4 py-2 font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Confirm Order
+                {submitting ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Processing...
+                  </span>
+                ) : (
+                  'Place Order'
+                )}
               </button>
             </div>
           </div>
