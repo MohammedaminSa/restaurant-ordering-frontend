@@ -374,8 +374,24 @@ function CartPage() {
 
             <div>
               <label className="block text-sm font-medium text-foreground mb-1.5">Payment Method</label>
-              <div className="w-full rounded-xl border border-input bg-muted px-4 py-3 text-sm text-muted-foreground">
-                {selectedPaymentMethod === 'cash' ? 'Cash' : selectedPaymentMethod === 'telebirr' ? 'Digital Wallet' : 'Bank Transfer'}
+              <div className="w-full rounded-xl border border-input bg-muted px-4 py-3 text-sm">
+                {selectedPaymentMethod === 'cash' ? (
+                  <span className="text-muted-foreground">Cash</span>
+                ) : selectedPaymentMethod === 'telebirr' && selectedAccount ? (
+                  <div className="flex items-center justify-between text-foreground">
+                    <span className="font-medium">{selectedAccount.type}</span>
+                    <span className="font-mono text-xs">{selectedAccount.phone}</span>
+                  </div>
+                ) : selectedPaymentMethod === 'bank_transfer' && selectedAccount ? (
+                  <div className="flex items-center justify-between text-foreground">
+                    <span className="font-medium">{selectedAccount.bank_name}</span>
+                    <span className="font-mono text-xs">{selectedAccount.account_number}</span>
+                  </div>
+                ) : (
+                  <span className="text-muted-foreground">
+                    {selectedPaymentMethod === 'telebirr' ? 'Digital Wallet' : 'Bank Transfer'}
+                  </span>
+                )}
               </div>
             </div>
 
