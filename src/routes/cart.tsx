@@ -24,6 +24,7 @@ function CartPage() {
 
   // Payment form state
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string>('cash');
+  const [selectedAccount, setSelectedAccount] = useState<any>(null);
   const [transactionId, setTransactionId] = useState('');
   const [payerName, setPayerName] = useState('');
 
@@ -109,6 +110,7 @@ function CartPage() {
 
     // Initialize payment form with session data
     setSelectedPaymentMethod('cash');
+    setSelectedAccount(null);
     setTransactionId('');
     setPayerName(sessionData?.customer_name || '');
 
@@ -312,34 +314,24 @@ function CartPage() {
 
           <h1 className="text-2xl font-bold text-foreground mb-6">Payment Details</h1>
 
-          {/* Payment Instructions for non-cash */}
-          {selectedPaymentMethod !== 'cash' && paymentDetails && (
+          {/* Selected account info */}
+          {selectedPaymentMethod !== 'cash' && selectedAccount && (
             <div className="rounded-xl border border-blue-200 bg-blue-50 p-5 mb-6">
-              <h3 className="font-semibold text-blue-800 mb-3">
-                {selectedPaymentMethod === 'telebirr' ? 'Send via Digital Wallet' : 'Transfer via Bank'}
+              <h3 className="font-semibold text-blue-800 mb-2">
+                {selectedPaymentMethod === 'telebirr' ? 'Send to this Wallet' : 'Transfer to this Account'}
               </h3>
-              {selectedPaymentMethod === 'telebirr' && paymentDetails.wallets && paymentDetails.wallets.length > 0 ? (
-                <div className="space-y-3">
-                  {paymentDetails.wallets.map((w, i) => (
-                    <div key={i} className="text-sm text-blue-700">
-                      <p className="font-semibold text-blue-800">{w.type}</p>
-                      <p>Account: {w.account_name}</p>
-                      <p className="font-mono font-bold">{w.phone}</p>
-                    </div>
-                  ))}
-                </div>
-              ) : selectedPaymentMethod === 'bank_transfer' && paymentDetails.banks && paymentDetails.banks.length > 0 ? (
-                <div className="space-y-3">
-                  {paymentDetails.banks.map((b, i) => (
-                    <div key={i} className="text-sm text-blue-700">
-                      <p><span className="text-blue-600">Bank:</span> <span className="font-semibold">{b.bank_name}</span></p>
-                      <p><span className="text-blue-600">Holder:</span> {b.account_holder}</p>
-                      <p className="font-mono font-bold">{b.account_number}</p>
-                    </div>
-                  ))}
+              {selectedPaymentMethod === 'telebirr' ? (
+                <div className="text-sm text-blue-700 space-y-0.5">
+                  <p className="font-semibold text-blue-800">{selectedAccount.type}</p>
+                  <p>Account: {selectedAccount.account_name}</p>
+                  <p className="font-mono font-bold text-base">{selectedAccount.phone}</p>
                 </div>
               ) : (
-                <p className="text-sm text-blue-700">Payment details not configured. Please contact the restaurant.</p>
+                <div className="text-sm text-blue-700 space-y-0.5">
+                  <p className="font-semibold text-blue-800">{selectedAccount.bank_name}</p>
+                  <p>Account Holder: {selectedAccount.account_holder}</p>
+                  <p className="font-mono font-bold text-base">{selectedAccount.account_number}</p>
+                </div>
               )}
             </div>
           )}
@@ -431,6 +423,10 @@ function CartPage() {
       },
     ];
 
+    const wallets = paymentDetails?.wallets || [];
+    const banks = paymentDetails?.banks || [];
+    const showAccounts = selectedPaymentMethod === 'telebirr' || selectedPaymentMethod === 'bank_transfer';
+
     return (
       <div className="min-h-screen bg-background">
         <SiteHeader />
@@ -457,6 +453,7 @@ function CartPage() {
                   key={method.id}
                   onClick={() => {
                     setSelectedPaymentMethod(method.id);
+                    setSelectedAccount(null);
                     setTransactionId('');
                   }}
                   className={`w-full flex items-center gap-4 rounded-xl border-2 p-4 text-left transition-all ${
@@ -484,9 +481,86 @@ function CartPage() {
             })}
           </div>
 
+          {/* Account selection for non-cash methods */}
+          {showAccounts && (
+            <div className="mb-8">
+              <h2 className="text-sm font-semibold text-foreground mb-3">
+                {selectedPaymentMethod === 'telebirr' ? 'Select a Wallet' : 'Select a Bank Account'}
+              </h2>
+              {selectedPaymentMethod === 'telebirr' && wallets.length > 0 ? (
+                <div className="space-y-2">
+                  {wallets.map((w, i) => (
+                    <button
+                      key={i}
+                      onClick={() => setSelectedAccount(w)}
+                      className={`w-full flex items-center gap-4 rounded-xl border-2 p-4 text-left transition-all ${
+                        selectedAccount === w
+                          ? 'border-primary bg-primary/5'
+                          : 'border-border hover:border-primary/50'
+                      }`}
+                    >
+                      <div className={`rounded-xl p-3 ${
+                        selectedAccount === w ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
+                      }`}>
+                        <Smartphone className="h-5 w-5" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className={`font-semibold ${selectedAccount === w ? 'text-primary' : 'text-foreground'}`}>{w.type}</p>
+                        <p className="text-sm text-muted-foreground">{w.account_name}</p>
+                        <p className="text-xs text-muted-foreground font-mono">{w.phone}</p>
+                      </div>
+                      <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                        selectedAccount === w ? 'border-primary' : 'border-muted-foreground/30'
+                      }`}>
+                        {selectedAccount === w && <div className="w-2.5 h-2.5 rounded-full bg-primary" />}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              ) : selectedPaymentMethod === 'bank_transfer' && banks.length > 0 ? (
+                <div className="space-y-2">
+                  {banks.map((b, i) => (
+                    <button
+                      key={i}
+                      onClick={() => setSelectedAccount(b)}
+                      className={`w-full flex items-center gap-4 rounded-xl border-2 p-4 text-left transition-all ${
+                        selectedAccount === b
+                          ? 'border-primary bg-primary/5'
+                          : 'border-border hover:border-primary/50'
+                      }`}
+                    >
+                      <div className={`rounded-xl p-3 ${
+                        selectedAccount === b ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
+                      }`}>
+                        <Building2 className="h-5 w-5" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className={`font-semibold ${selectedAccount === b ? 'text-primary' : 'text-foreground'}`}>{b.bank_name}</p>
+                        <p className="text-sm text-muted-foreground">{b.account_holder}</p>
+                        <p className="text-xs text-muted-foreground font-mono">{b.account_number}</p>
+                      </div>
+                      <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                        selectedAccount === b ? 'border-primary' : 'border-muted-foreground/30'
+                      }`}>
+                        {selectedAccount === b && <div className="w-2.5 h-2.5 rounded-full bg-primary" />}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <div className="rounded-xl border border-dashed border-muted-foreground/30 p-6 text-center">
+                  <p className="text-sm text-muted-foreground">
+                    No accounts configured. Please contact the restaurant.
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+
           <button
             onClick={() => setStep('payment-details')}
-            className="w-full rounded-xl bg-primary px-6 py-4 text-lg font-semibold text-primary-foreground hover:bg-primary/90 shadow-lg shadow-primary/25"
+            disabled={selectedPaymentMethod === 'cash' ? false : !selectedAccount}
+            className="w-full rounded-xl bg-primary px-6 py-4 text-lg font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-primary/25"
           >
             Continue
           </button>
