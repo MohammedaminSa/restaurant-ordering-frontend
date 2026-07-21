@@ -1,9 +1,9 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import { useCart, fmt } from "@/lib/cart";
-import { placeOrder, createSession } from "@/lib/api";
+import { placeOrder, createSession, getSessionByToken, type PaymentDetails } from "@/lib/api";
 import { toast } from "sonner";
-import { ShoppingBag, ArrowLeft, CheckCircle, Loader2, MapPin, User, Table as TableIcon, Trash2, Plus, Minus } from "lucide-react";
+import { ShoppingBag, ArrowLeft, CheckCircle, Loader2, MapPin, User, Table as TableIcon, Trash2, Plus, Minus, Smartphone, Building2, CreditCard, Banknote, Wallet } from "lucide-react";
 import { SiteHeader } from "@/components/site-header";
 
 export const Route = createFileRoute("/cart")({
@@ -20,6 +20,10 @@ function CartPage() {
   const [orderNumber, setOrderNumber] = useState<number | null>(null);
   const [showCustomerForm, setShowCustomerForm] = useState(false);
   const [pendingTableInfo, setPendingTableInfo] = useState<any>(null);
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string>('cash');
+  const [paymentConfirmed, setPaymentConfirmed] = useState(false);
+  const [paymentDetails, setPaymentDetails] = useState<PaymentDetails | null>(null);
+  const [fetchingSession, setFetchingSession] = useState(false);
 
   const sessionToken = localStorage.getItem("sessionToken");
   const sessionDataStr = localStorage.getItem("sessionData");
@@ -37,14 +41,39 @@ function CartPage() {
     if (!sessionToken) {
       const stored = localStorage.getItem("pendingTableInfo");
       if (stored) {
-        setPendingTableInfo(JSON.parse(stored));
-        // Don't automatically show the form - wait for user to click "Start Order"
+        const parsed = JSON.parse(stored);
+        setPendingTableInfo(parsed);
+        setPaymentDetails(parsed.payment_details || null);
       }
     } else {
       // Sync currentSessionData with localStorage when component mounts
       const sessionDataStr = localStorage.getItem("sessionData");
       if (sessionDataStr) {
-        setCurrentSessionData(JSON.parse(sessionDataStr));
+        const parsed = JSON.parse(sessionDataStr);
+        setCurrentSessionData(parsed);
+        if (parsed.payment_details) {
+          setPaymentDetails(parsed.payment_details);
+        }
+      }
+      // Fetch fresh session data to get payment_details
+      if (sessionToken) {
+        setFetchingSession(true);
+        getSessionByToken(sessionToken)
+          .then((res) => {
+            const session = res.data;
+            if (session.payment_details) {
+              setPaymentDetails(session.payment_details);
+            }
+            // Enrich localStorage with payment_details
+            const existing = localStorage.getItem("sessionData");
+            if (existing) {
+              const enriched = { ...JSON.parse(existing), payment_details: session.payment_details, currency: session.currency };
+              localStorage.setItem("sessionData", JSON.stringify(enriched));
+              setCurrentSessionData(enriched);
+            }
+          })
+          .catch(() => {})
+          .finally(() => setFetchingSession(false));
       }
     }
   }, [sessionToken]);
@@ -76,6 +105,12 @@ function CartPage() {
       return;
     }
 
+    // Validate payment method selection
+    if (selectedPaymentMethod !== 'cash' && !paymentConfirmed) {
+      toast.error("Please confirm your payment before placing the order");
+      return;
+    }
+
     // Session exists, show confirmation dialog to place order
     setShowConfirmDialog(true);
   };
@@ -101,6 +136,7 @@ function CartPage() {
         session_token: sessionToken,
         items: orderItems,
         special_instructions: orderInstructions.trim() || undefined,
+        payment_method: selectedPaymentMethod as any,
       });
 
       setOrderNumber(response.data.order_number);
@@ -145,14 +181,9 @@ function CartPage() {
       }
       
       setCurrentSessionData(newSession);
+      setPaymentDetails(newSession.payment_details || pendingTableInfo?.payment_details || null);
       
-      // Session created successfully, now show confirmation to place order
-      toast.success("Session started! Confirm to place your order.");
-      
-      // Small delay to let user see the success message, then show confirm dialog
-      setTimeout(() => {
-        setShowConfirmDialog(true);
-      }, 1000);
+      toast.success("Session started! Select your payment method to place order.");
     }
   };
 
@@ -367,6 +398,99 @@ function CartPage() {
           />
         </div>
 
+        {/* Payment Method */}
+        <div className="rounded-xl border border-border bg-card p-6 mb-4">
+          <h2 className="font-semibold text-lg text-foreground mb-4">Payment Method</h2>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <button
+              onClick={() => { setSelectedPaymentMethod('cash'); setPaymentConfirmed(false); }}
+              className={`rounded-lg border-2 p-4 text-center transition-all ${
+                selectedPaymentMethod === 'cash'
+                  ? 'border-primary bg-primary/5'
+                  : 'border-border hover:border-primary/50'
+              }`}
+            >
+              <Banknote className="h-6 w-6 mx-auto mb-2 text-foreground" />
+              <span className="text-sm font-semibold text-foreground block">Cash</span>
+              <span className="text-xs text-muted-foreground">Pay at counter</span>
+            </button>
+
+            <button
+              onClick={() => { setSelectedPaymentMethod('telebirr'); setPaymentConfirmed(false); }}
+              className={`rounded-lg border-2 p-4 text-center transition-all ${
+                selectedPaymentMethod === 'telebirr'
+                  ? 'border-primary bg-primary/5'
+                  : 'border-border hover:border-primary/50'
+              }`}
+            >
+              <Smartphone className="h-6 w-6 mx-auto mb-2 text-foreground" />
+              <span className="text-sm font-semibold text-foreground block">Telebirr</span>
+              <span className="text-xs text-muted-foreground">Mobile money</span>
+            </button>
+
+            <button
+              onClick={() => { setSelectedPaymentMethod('bank_transfer'); setPaymentConfirmed(false); }}
+              className={`rounded-lg border-2 p-4 text-center transition-all ${
+                selectedPaymentMethod === 'bank_transfer'
+                  ? 'border-primary bg-primary/5'
+                  : 'border-border hover:border-primary/50'
+              }`}
+            >
+              <Building2 className="h-6 w-6 mx-auto mb-2 text-foreground" />
+              <span className="text-sm font-semibold text-foreground block">Bank Transfer</span>
+              <span className="text-xs text-muted-foreground">Direct deposit</span>
+            </button>
+
+            <button
+              onClick={() => { setSelectedPaymentMethod('chapa'); setPaymentConfirmed(false); }}
+              className={`rounded-lg border-2 p-4 text-center transition-all ${
+                selectedPaymentMethod === 'chapa'
+                  ? 'border-primary bg-primary/5'
+                  : 'border-border hover:border-primary/50'
+              }`}
+            >
+              <Wallet className="h-6 w-6 mx-auto mb-2 text-foreground" />
+              <span className="text-sm font-semibold text-foreground block">Chapa</span>
+              <span className="text-xs text-muted-foreground">Online gateway</span>
+            </button>
+          </div>
+
+          {/* Payment Instructions for non-cash methods */}
+          {selectedPaymentMethod !== 'cash' && (
+            <div className="mt-4 rounded-lg border border-blue-200 bg-blue-50 p-4">
+              <h3 className="font-semibold text-blue-800 mb-2">Pay via {selectedPaymentMethod === 'telebirr' ? 'Telebirr' : selectedPaymentMethod === 'bank_transfer' ? 'Bank Transfer' : 'Chapa'}</h3>
+              {selectedPaymentMethod === 'telebirr' && paymentDetails?.telebirr ? (
+                <div className="text-sm text-blue-700 space-y-1">
+                  <p>Account Name: <strong>{paymentDetails.telebirr.account_name}</strong></p>
+                  <p>Phone Number: <strong>{paymentDetails.telebirr.phone}</strong></p>
+                </div>
+              ) : selectedPaymentMethod === 'bank_transfer' && paymentDetails?.bank_transfer ? (
+                <div className="text-sm text-blue-700 space-y-1">
+                  <p>Bank: <strong>{paymentDetails.bank_transfer.bank_name}</strong></p>
+                  <p>Account Holder: <strong>{paymentDetails.bank_transfer.account_holder}</strong></p>
+                  <p>Account Number: <strong>{paymentDetails.bank_transfer.account_number}</strong></p>
+                </div>
+              ) : selectedPaymentMethod === 'chapa' && paymentDetails?.chapa ? (
+                <div className="text-sm text-blue-700 space-y-1">
+                  <p>Merchant: <strong>{paymentDetails.chapa.merchant_name}</strong></p>
+                  <p>Merchant ID: <strong>{paymentDetails.chapa.merchant_id}</strong></p>
+                </div>
+              ) : (
+                <p className="text-sm text-blue-700">Payment details not configured. Please contact the restaurant.</p>
+              )}
+              <label className="flex items-center gap-2 mt-3 pt-3 border-t border-blue-200 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={paymentConfirmed}
+                  onChange={(e) => setPaymentConfirmed(e.target.checked)}
+                  className="rounded border-blue-300 text-blue-600 focus:ring-blue-500"
+                />
+                <span className="text-sm text-blue-800 font-medium">I have completed the payment</span>
+              </label>
+            </div>
+          )}
+        </div>
+
         {/* Price Breakdown */}
         <div className="rounded-xl border border-border bg-card p-6 mb-4">
           <h2 className="font-semibold text-lg text-foreground mb-4">Payment Summary</h2>
@@ -423,9 +547,12 @@ function CartPage() {
           <div className="bg-background rounded-xl border border-border p-6 max-w-md w-full mx-4">
             <h2 className="text-xl font-bold text-foreground mb-2">Confirm Your Order</h2>
             <p className="text-foreground mb-2">Are you sure you want to place this order?</p>
-            <p className="text-sm text-muted-foreground mb-6">
-              {count} {count === 1 ? 'item' : 'items'} • Total: {fmt(grandTotal, currency)}
-            </p>
+            <div className="rounded-lg bg-muted p-3 mb-4 text-sm space-y-1">
+              <p className="text-muted-foreground">{count} {count === 1 ? 'item' : 'items'} • Total: {fmt(grandTotal, currency)}</p>
+              <p className="text-muted-foreground">
+                Payment: <span className="font-semibold text-foreground capitalize">{selectedPaymentMethod === 'cash' ? 'Cash (Pay at counter)' : `${selectedPaymentMethod} (Pre-paid)`}</span>
+              </p>
+            </div>
             <div className="flex gap-3">
               <button
                 onClick={() => setShowConfirmDialog(false)}
@@ -452,6 +579,11 @@ function CartPage() {
             <h2 className="text-2xl font-bold text-foreground mb-2">Order Placed Successfully!</h2>
             <p className="text-muted-foreground mb-2">Your order number is</p>
             <p className="text-4xl font-bold text-primary mb-2">#{orderNumber}</p>
+            <p className="text-sm text-muted-foreground mb-1">
+              {selectedPaymentMethod !== 'cash'
+                ? `Payment via ${selectedPaymentMethod} completed`
+                : 'Pay with cash at the counter'}
+            </p>
             <p className="text-sm text-muted-foreground mb-6">
               We'll notify you when your order is ready
             </p>
@@ -505,7 +637,8 @@ function CustomerInfoForm({ onSuccess, onCancel }: CustomerInfoFormProps) {
         restaurant_logo: tableInfo.restaurant_logo,
         tax_rate: tableInfo.tax_rate,
         service_charge_rate: tableInfo.service_charge_rate,
-        currency: tableInfo.currency || 'USD',
+        currency: tableInfo.currency || 'ETB',
+        payment_details: tableInfo.payment_details || sessionData.payment_details,
         orders: [],
       };
       

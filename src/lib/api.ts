@@ -163,6 +163,8 @@ export interface TableInfo {
   restaurant_logo?: string;
   tax_rate: number;
   service_charge_rate: number;
+  currency: string;
+  payment_details?: PaymentDetails;
   active_session?: {
     session_token: string;
     customer_name: string;
@@ -196,6 +198,8 @@ export interface SessionData {
   customer_name: string;
   status: string;
   started_at: string;
+  payment_details?: PaymentDetails;
+  currency?: string;
 }
 
 export interface SessionDetail {
@@ -216,6 +220,7 @@ export interface SessionDetail {
   tax_rate: number;
   service_charge_rate: number;
   currency: string;
+  payment_details?: PaymentDetails;
   orders: any[];
 }
 
@@ -371,6 +376,7 @@ export interface PlaceOrderRequest {
     special_instructions?: string;
   }[];
   special_instructions?: string;
+  payment_method?: 'cash' | 'card' | 'digital_wallet' | 'online' | 'telebirr' | 'chapa' | 'bank_transfer';
 }
 
 export interface PlacedOrder {
@@ -386,6 +392,8 @@ export interface PlacedOrder {
   service_charge: string;
   discount_amount: string;
   total_amount: string;
+  payment_method?: string;
+  payment_status?: string;
   special_instructions?: string;
   created_at: string;
   items: OrderItem[];
