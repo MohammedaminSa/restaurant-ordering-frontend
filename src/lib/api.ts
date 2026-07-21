@@ -820,6 +820,12 @@ export const deleteMenuItem = async (itemId: string): Promise<ApiResponse<null>>
 // RESTAURANT APIs (Super Admin)
 // ============================================
 
+export interface PaymentDetails {
+  telebirr?: { account_name?: string; phone?: string };
+  bank_transfer?: { bank_name?: string; account_holder?: string; account_number?: string };
+  chapa?: { merchant_name?: string; merchant_id?: string };
+}
+
 export interface Restaurant {
   id: string;
   name: string;
@@ -838,6 +844,7 @@ export interface Restaurant {
   updated_at: string;
   admin_count?: number;
   total_staff?: number;
+  payment_details?: PaymentDetails;
 }
 
 export interface CreateRestaurantRequest {
@@ -850,6 +857,7 @@ export interface CreateRestaurantRequest {
   currency?: string;
   tax_rate?: number;
   service_charge_rate?: number;
+  payment_details?: PaymentDetails;
 }
 
 export interface UpdateRestaurantRequest {
@@ -863,6 +871,7 @@ export interface UpdateRestaurantRequest {
   tax_rate?: number;
   service_charge_rate?: number;
   is_active?: boolean;
+  payment_details?: PaymentDetails;
 }
 
 /**
@@ -881,6 +890,14 @@ export const getRestaurants = async (search?: string, status?: string): Promise<
  */
 export const getRestaurantById = async (id: string): Promise<ApiResponse<Restaurant>> => {
   const response = await api.get(`/restaurants/${id}`);
+  return response.data;
+};
+
+/**
+ * Get own restaurant info (any authenticated staff)
+ */
+export const getMyRestaurant = async (): Promise<ApiResponse<Restaurant>> => {
+  const response = await api.get('/restaurants/my');
   return response.data;
 };
 

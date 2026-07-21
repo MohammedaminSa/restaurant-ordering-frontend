@@ -23,7 +23,7 @@ import {
   Wallet,
   AlertCircle,
 } from "lucide-react";
-import { getActiveSessions, getSessionBill, recordPayment, type SessionBill, type PaymentRequest } from "@/lib/api";
+import { getActiveSessions, getSessionBill, recordPayment, getMyRestaurant, type SessionBill, type PaymentRequest, type PaymentDetails } from "@/lib/api";
 
 export const Route = createFileRoute("/dashboard/cashier/checkout")({
   component: CashierCheckout,
@@ -143,6 +143,14 @@ function CashierCheckout() {
     queryFn: () => getSessionBill(selectedSession.session_token),
     enabled: !!selectedSession,
   });
+
+  const { data: restaurantData } = useQuery({
+    queryKey: ["my-restaurant", user?.restaurant_id],
+    queryFn: () => getMyRestaurant(),
+    enabled: !!user,
+  });
+
+  const paymentDetails = restaurantData?.data?.payment_details;
 
   const paymentMutation = useMutation({
     mutationFn: (data: PaymentRequest) => recordPayment(data),
@@ -433,6 +441,41 @@ function CashierCheckout() {
                       </SelectContent>
                     </Select>
                   </div>
+
+                  {form.payment_method !== "cash" && paymentDetails && (
+                    <div className="rounded-lg border border-border bg-accent/5 p-4 space-y-3">
+                      <p className="text-sm font-semibold text-foreground flex items-center gap-2">
+                        <AlertCircle className="h-4 w-4 text-accent" />
+                        Payment Instructions
+                      </p>
+                      {form.payment_method === "telebirr" && paymentDetails.telebirr?.phone && (
+                        <div className="space-y-1 text-sm">
+                          <p className="text-muted-foreground">Send via Telebirr to:</p>
+                          {paymentDetails.telebirr.account_name && (
+                            <p><span className="text-muted-foreground">Account:</span> {paymentDetails.telebirr.account_name}</p>
+                          )}
+                          <p className="text-lg font-bold text-foreground tracking-wide">{paymentDetails.telebirr.phone}</p>
+                        </div>
+                      )}
+                      {form.payment_method === "bank_transfer" && paymentDetails.bank_transfer?.account_number && (
+                        <div className="space-y-1 text-sm">
+                          <p className="text-muted-foreground">Transfer to:</p>
+                          <p><span className="text-muted-foreground">Bank:</span> {paymentDetails.bank_transfer.bank_name}</p>
+                          <p><span className="text-muted-foreground">Account Holder:</span> {paymentDetails.bank_transfer.account_holder}</p>
+                          <p><span className="text-muted-foreground">Account:</span> <span className="font-bold text-foreground">{paymentDetails.bank_transfer.account_number}</span></p>
+                        </div>
+                      )}
+                      {form.payment_method === "chapa" && (
+                        <p className="text-sm text-muted-foreground">Process payment via Chapa at the counter.</p>
+                      )}
+                      {form.payment_method === "card" && (
+                        <p className="text-sm text-muted-foreground">Process card payment at the POS terminal.</p>
+                      )}
+                      {form.payment_method === "digital_wallet" && (
+                        <p className="text-sm text-muted-foreground">Process digital wallet payment at the counter.</p>
+                      )}
+                    </div>
+                  )}
 
                   <div className="space-y-2">
                     <Label>Tip Amount (Optional)</Label>
