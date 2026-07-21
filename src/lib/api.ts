@@ -916,11 +916,26 @@ export const toggleRestaurantStatus = async (id: string): Promise<ApiResponse<Re
   return response.data;
 };
 
+export interface UpdateMyProfileRequest {
+  name?: string;
+  email?: string;
+  phone?: string;
+}
+
+/**
+ * Update own profile (any authenticated user)
+ */
+export const updateMyProfile = async (data: UpdateMyProfileRequest): Promise<ApiResponse<User>> => {
+  const response = await api.patch('/auth/me', data);
+  return response.data;
+};
+
 /**
  * Update user password (Admin - can set new password without current)
+ * For self-service, pass currentPassword
  */
-export const updateUserPassword = async (userId: string, newPassword: string): Promise<ApiResponse<null>> => {
-  const response = await api.patch(`/users/${userId}/password`, { newPassword });
+export const updateUserPassword = async (userId: string, newPassword: string, currentPassword?: string): Promise<ApiResponse<null>> => {
+  const response = await api.patch(`/users/${userId}/password`, { newPassword, currentPassword });
   return response.data;
 };
 

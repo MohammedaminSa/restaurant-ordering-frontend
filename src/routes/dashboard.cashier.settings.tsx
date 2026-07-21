@@ -1,22 +1,23 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { useAuthStore } from "@/lib/auth-store";
-import { updateUser, ROLE_LABELS } from "@/lib/api";
+import { updateMyProfile, updateUserPassword, ROLE_LABELS } from "@/lib/api";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   User,
   Shield,
-  Bell,
+  Lock,
   LogOut,
   Save,
   Loader2,
   DollarSign,
   Printer,
-  Mail,
+  Bell,
 } from "lucide-react";
 import { toast } from "sonner";
+import { useMutation } from "@tanstack/react-query";
 
 export const Route = createFileRoute("/dashboard/cashier/settings")({
   component: CashierSettings,
@@ -30,12 +31,34 @@ function CashierSettings() {
     email: user?.email || "",
     phone: user?.phone || "",
   });
+  const [preferences, setPreferences] = useState({
+    autoPrint: true,
+    paymentNotifications: true,
+  });
+
+  const [showPasswordForm, setShowPasswordForm] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+
+  const passwordMutation = useMutation({
+    mutationFn: ({ newPw, currentPw }: { newPw: string; currentPw?: string }) =>
+      updateUserPassword(user!.id, newPw, currentPw),
+    onSuccess: () => {
+      toast.success("Password changed successfully");
+      setShowPasswordForm(false);
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+    },
+    onError: (err: any) => toast.error(err.message || "Failed to change password"),
+  });
 
   const handleSaveProfile = async () => {
     if (!user) return;
     setIsSaving(true);
     try {
-      const res = await updateUser(user.id, {
+      const res = await updateMyProfile({
         name: profile.name,
         email: profile.email,
         phone: profile.phone || undefined,
@@ -47,6 +70,20 @@ function CashierSettings() {
     } finally {
       setIsSaving(false);
     }
+  };
+
+  const handlePasswordChange = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newPassword !== confirmPassword) {
+      toast.error("Passwords do not match");
+      return;
+    }
+    if (newPassword.length < 6) {
+      toast.error("Password must be at least 6 characters");
+      return;
+    }
+    if (!user) return;
+    passwordMutation.mutate({ newPw: newPassword, currentPw: currentPassword || undefined });
   };
 
   const handleLogout = async () => {
@@ -123,29 +160,105 @@ function CashierSettings() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
+            <Lock className="h-4 w-4" />
+            Change Password
+          </CardTitle>
+          <CardDescription>Update your account password</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {showPasswordForm ? (
+            <form onSubmit={handlePasswordChange} className="space-y-3">
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-1.5">Current Password</label>
+                <input
+                  type="password"
+                  value={currentPassword}
+                  onChange={(e) => setCurrentPassword(e.target.value)}
+                  required
+                  className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground placeholder-muted-foreground/60 focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-1.5">New Password</label>
+                <input
+                  type="password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  required
+                  minLength={6}
+                  className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground placeholder-muted-foreground/60 focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-1.5">Confirm New Password</label>
+                <input
+                  type="password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  required
+                  className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground placeholder-muted-foreground/60 focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring"
+                />
+              </div>
+              <div className="flex justify-end gap-3">
+                <Button type="button" variant="outline" onClick={() => { setShowPasswordForm(false); setCurrentPassword(""); setNewPassword(""); setConfirmPassword(""); }}>
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={passwordMutation.isPending}>
+                  {passwordMutation.isPending ? "Updating..." : "Update Password"}
+                </Button>
+              </div>
+            </form>
+          ) : (
+            <Button onClick={() => setShowPasswordForm(true)} variant="outline" className="w-full">
+              Change Password
+            </Button>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
             <DollarSign className="h-4 w-4" />
             Payment Preferences
           </CardTitle>
           <CardDescription>Default payment settings</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          {[
-            { icon: Printer, label: "Auto-print receipt", desc: "Automatically print after payment" },
-            { icon: Bell, label: "Payment notifications", desc: "Show confirmation on payment" },
-          ].map((item) => (
-            <div key={item.label} className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="rounded-lg bg-accent/10 p-2">
-                  <item.icon className="h-4 w-4 text-accent" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-foreground">{item.label}</p>
-                  <p className="text-xs text-muted-foreground">{item.desc}</p>
-                </div>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="rounded-lg bg-accent/10 p-2">
+                <Printer className="h-4 w-4 text-accent" />
               </div>
-              <Button variant="outline" size="sm">Enable</Button>
+              <div>
+                <p className="text-sm font-medium text-foreground">Auto-print receipt</p>
+                <p className="text-xs text-muted-foreground">Automatically print after payment</p>
+              </div>
             </div>
-          ))}
+            <button
+              onClick={() => setPreferences((p) => ({ ...p, autoPrint: !p.autoPrint }))}
+              className={`relative h-6 w-11 rounded-full transition-colors ${preferences.autoPrint ? "bg-accent" : "bg-muted"}`}
+            >
+              <span className={`absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-transform ${preferences.autoPrint ? "translate-x-5" : "translate-x-0"}`} />
+            </button>
+          </div>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="rounded-lg bg-accent/10 p-2">
+                <Bell className="h-4 w-4 text-accent" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-foreground">Payment notifications</p>
+                <p className="text-xs text-muted-foreground">Show confirmation on payment</p>
+              </div>
+            </div>
+            <button
+              onClick={() => setPreferences((p) => ({ ...p, paymentNotifications: !p.paymentNotifications }))}
+              className={`relative h-6 w-11 rounded-full transition-colors ${preferences.paymentNotifications ? "bg-accent" : "bg-muted"}`}
+            >
+              <span className={`absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-transform ${preferences.paymentNotifications ? "translate-x-5" : "translate-x-0"}`} />
+            </button>
+          </div>
         </CardContent>
       </Card>
 

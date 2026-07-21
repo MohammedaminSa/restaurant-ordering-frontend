@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { useAuthStore } from "@/lib/auth-store";
-import { updateUser, ROLE_LABELS } from "@/lib/api";
+import { updateMyProfile, updateUserPassword, ROLE_LABELS } from "@/lib/api";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -9,11 +9,13 @@ import {
   User,
   Bell,
   Shield,
+  Lock,
   Save,
   Loader2,
   LogOut,
 } from "lucide-react";
 import { toast } from "sonner";
+import { useMutation } from "@tanstack/react-query";
 
 export const Route = createFileRoute("/dashboard/waiter/settings")({
   component: WaiterSettings,
@@ -33,11 +35,29 @@ function WaiterSettings() {
     newSessionAlert: true,
   });
 
+  const [showPasswordForm, setShowPasswordForm] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+
+  const passwordMutation = useMutation({
+    mutationFn: ({ newPw, currentPw }: { newPw: string; currentPw?: string }) =>
+      updateUserPassword(user!.id, newPw, currentPw),
+    onSuccess: () => {
+      toast.success("Password changed successfully");
+      setShowPasswordForm(false);
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+    },
+    onError: (err: any) => toast.error(err.message || "Failed to change password"),
+  });
+
   const handleSaveProfile = async () => {
     if (!user) return;
     setIsSaving(true);
     try {
-      const res = await updateUser(user.id, {
+      const res = await updateMyProfile({
         name: profile.name,
         email: profile.email,
         phone: profile.phone || undefined,
@@ -56,6 +76,20 @@ function WaiterSettings() {
     await new Promise((r) => setTimeout(r, 800));
     toast.success("Preferences saved");
     setIsSaving(false);
+  };
+
+  const handlePasswordChange = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newPassword !== confirmPassword) {
+      toast.error("Passwords do not match");
+      return;
+    }
+    if (newPassword.length < 6) {
+      toast.error("Password must be at least 6 characters");
+      return;
+    }
+    if (!user) return;
+    passwordMutation.mutate({ newPw: newPassword, currentPw: currentPassword || undefined });
   };
 
   const handleLogout = async () => {
@@ -131,6 +165,42 @@ function WaiterSettings() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
+            <Lock className="h-4 w-4" />
+            Change Password
+          </CardTitle>
+          <CardDescription>Update your account password</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {showPasswordForm ? (
+            <form onSubmit={handlePasswordChange} className="space-y-3">
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-1.5">Current Password</label>
+                <input type="password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} required className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground placeholder-muted-foreground/60 focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-1.5">New Password</label>
+                <input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} required minLength={6} className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground placeholder-muted-foreground/60 focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-1.5">Confirm New Password</label>
+                <input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground placeholder-muted-foreground/60 focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring" />
+              </div>
+              <div className="flex justify-end gap-3">
+                <Button type="button" variant="outline" onClick={() => { setShowPasswordForm(false); setCurrentPassword(""); setNewPassword(""); setConfirmPassword(""); }}>Cancel</Button>
+                <Button type="submit" disabled={passwordMutation.isPending}>
+                  {passwordMutation.isPending ? "Updating..." : "Update Password"}
+                </Button>
+              </div>
+            </form>
+          ) : (
+            <Button onClick={() => setShowPasswordForm(true)} variant="outline" className="w-full">Change Password</Button>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
             <Bell className="h-4 w-4" />
             Notifications
           </CardTitle>
@@ -148,21 +218,10 @@ function WaiterSettings() {
                 <p className="text-xs text-muted-foreground">{item.desc}</p>
               </div>
               <button
-                onClick={() =>
-                  setPreferences((p) => ({
-                    ...p,
-                    [item.key]: !(p as any)[item.key],
-                  }))
-                }
-                className={`relative h-6 w-11 rounded-full transition-colors ${
-                  (preferences as any)[item.key] ? "bg-accent" : "bg-muted"
-                }`}
+                onClick={() => setPreferences((p) => ({ ...p, [item.key]: !(p as any)[item.key] }))}
+                className={`relative h-6 w-11 rounded-full transition-colors ${(preferences as any)[item.key] ? "bg-accent" : "bg-muted"}`}
               >
-                <span
-                  className={`absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-transform ${
-                    (preferences as any)[item.key] ? "translate-x-5" : "translate-x-0"
-                  }`}
-                />
+                <span className={`absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-transform ${(preferences as any)[item.key] ? "translate-x-5" : "translate-x-0"}`} />
               </button>
             </div>
           ))}

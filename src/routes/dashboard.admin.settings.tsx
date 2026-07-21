@@ -1,18 +1,16 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useAuthStore } from "@/lib/auth-store";
-import { ROLE_LABELS, updateUserPassword } from "@/lib/api";
+import { ROLE_LABELS, updateMyProfile, updateUserPassword } from "@/lib/api";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   User,
   Shield,
-  Mail,
   Lock,
   LogOut,
   Save,
   Loader2,
-  Settings,
   Building2,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -24,19 +22,25 @@ export const Route = createFileRoute("/dashboard/admin/settings")({
 });
 
 function AdminSettings() {
-  const { user, logout } = useAuthStore();
+  const { user, setUser, logout } = useAuthStore();
   const navigate = useNavigate();
   const isSuperAdmin = user?.role === "super_admin";
+
+  const [profile, setProfile] = useState({
+    name: user?.name || "",
+    email: user?.email || "",
+    phone: user?.phone || "",
+  });
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
 
   const [showPasswordForm, setShowPasswordForm] = useState(false);
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [isSaving, setIsSaving] = useState(false);
 
   const passwordMutation = useMutation({
-    mutationFn: ({ userId, password }: { userId: string; password: string }) =>
-      updateUserPassword(userId, password),
+    mutationFn: ({ newPw, currentPw }: { newPw: string; currentPw?: string }) =>
+      updateUserPassword(user!.id, newPw, currentPw),
     onSuccess: () => {
       toast.success("Password changed successfully");
       setShowPasswordForm(false);
@@ -46,6 +50,24 @@ function AdminSettings() {
     },
     onError: (err: any) => toast.error(err.message || "Failed to change password"),
   });
+
+  const handleSaveProfile = async () => {
+    if (!user) return;
+    setIsSavingProfile(true);
+    try {
+      const res = await updateMyProfile({
+        name: profile.name,
+        email: profile.email,
+        phone: profile.phone || undefined,
+      });
+      if (res.data) setUser(res.data as any);
+      toast.success("Profile updated");
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to update profile");
+    } finally {
+      setIsSavingProfile(false);
+    }
+  };
 
   const handleLogout = async () => {
     await logout();
@@ -64,7 +86,7 @@ function AdminSettings() {
       return;
     }
     if (!user) return;
-    passwordMutation.mutate({ userId: user.id, password: newPassword });
+    passwordMutation.mutate({ newPw: newPassword, currentPw: currentPassword || undefined });
   };
 
   if (!user) return null;
@@ -82,9 +104,9 @@ function AdminSettings() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
             <User className="h-4 w-4" />
-            Profile Information
+            Profile
           </CardTitle>
-          <CardDescription>Your account details</CardDescription>
+          <CardDescription>Update your personal information</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-center gap-4 p-4 rounded-lg bg-accent/5">
@@ -97,21 +119,46 @@ function AdminSettings() {
             </div>
           </div>
           <div className="space-y-3">
-            {[
-              { icon: Mail, label: "Email", value: user.email },
-              { icon: Building2, label: "Account ID", value: user.id?.slice(0, 12) + "..." },
-            ].map((item) => (
-              <div key={item.label} className="flex items-center gap-3 rounded-lg bg-muted/50 p-3">
-                <div className="rounded-lg bg-accent/10 p-2">
-                  <item.icon className="h-4 w-4 text-accent" />
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">{item.label}</p>
-                  <p className="text-sm font-medium text-foreground">{item.value}</p>
-                </div>
-              </div>
-            ))}
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-1.5">Full Name</label>
+              <input
+                type="text"
+                value={profile.name}
+                onChange={(e) => setProfile((p) => ({ ...p, name: e.target.value }))}
+                className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground placeholder-muted-foreground/60 focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-1.5">Email</label>
+              <input
+                type="email"
+                value={profile.email}
+                onChange={(e) => setProfile((p) => ({ ...p, email: e.target.value }))}
+                className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground placeholder-muted-foreground/60 focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-1.5">Phone</label>
+              <input
+                type="tel"
+                value={profile.phone}
+                onChange={(e) => setProfile((p) => ({ ...p, phone: e.target.value }))}
+                placeholder="+1 234 567 890"
+                className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground placeholder-muted-foreground/60 focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring"
+              />
+            </div>
           </div>
+          <div className="flex items-center gap-3 rounded-lg bg-muted/50 p-3">
+            <Building2 className="h-4 w-4 text-muted-foreground" />
+            <div>
+              <p className="text-xs text-muted-foreground">Account ID</p>
+              <p className="text-sm font-medium text-foreground font-mono">{user.id?.slice(0, 12)}...</p>
+            </div>
+          </div>
+          <Button onClick={handleSaveProfile} disabled={isSavingProfile}>
+            {isSavingProfile ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Save className="h-4 w-4 mr-1" />}
+            Save Changes
+          </Button>
         </CardContent>
       </Card>
 
@@ -171,11 +218,7 @@ function AdminSettings() {
               </div>
             </form>
           ) : (
-            <Button
-              onClick={() => setShowPasswordForm(true)}
-              variant="outline"
-              className="w-full"
-            >
+            <Button onClick={() => setShowPasswordForm(true)} variant="outline" className="w-full">
               Change Password
             </Button>
           )}
