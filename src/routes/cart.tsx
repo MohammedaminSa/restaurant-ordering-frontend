@@ -1,9 +1,10 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useCart, fmt } from "@/lib/cart";
-import { placeOrder, createSession, getSessionByToken, type PaymentDetails } from "@/lib/api";
+import { placeOrder, createSession, getSessionByToken, getSessionNotifications, type PaymentDetails } from "@/lib/api";
 import { toast } from "sonner";
-import { ShoppingBag, ArrowLeft, CheckCircle, Loader2, MapPin, User, Table as TableIcon, Trash2, Plus, Minus, Smartphone, Building2, Banknote, Wallet, Landmark } from "lucide-react";
+import { ShoppingBag, ArrowLeft, CheckCircle, Loader2, MapPin, User, Table as TableIcon, Trash2, Plus, Minus, Smartphone, Building2, Banknote, Wallet, Landmark, XCircle, Timer } from "lucide-react";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { SiteHeader } from "@/components/site-header";
@@ -32,6 +33,14 @@ function CartPage() {
 
   const sessionToken = localStorage.getItem("sessionToken");
   const sessionDataStr = localStorage.getItem("sessionData");
+
+  // Poll notifications during confirmation step
+  const { data: notifData } = useQuery({
+    queryKey: ["cart-notifications", sessionToken],
+    queryFn: () => getSessionNotifications(sessionToken!),
+    enabled: !!sessionToken && step === 'confirmation',
+    refetchInterval: 5000,
+  });
   
   // Initialize state with localStorage data on mount
   const [currentSessionData, setCurrentSessionData] = useState<any>(() => {
@@ -244,14 +253,72 @@ function CartPage() {
   // STEP 3: CONFIRMATION
   // =========================================================
   if (step === 'confirmation') {
+    const notifications = notifData?.data || [];
+    const paymentApproved = notifications.some((n: any) => n.type === 'payment_approved');
+    const paymentRejected = notifications.some((n: any) => n.type === 'payment_rejected');
+
+    if (paymentApproved) {
+      return (
+        <div className="min-h-screen bg-background">
+          <SiteHeader />
+          <div className="mx-auto max-w-lg px-4 py-16 text-center">
+            <div className="rounded-full bg-green-100 p-4 w-24 h-24 mx-auto mb-6 flex items-center justify-center">
+              <CheckCircle className="h-12 w-12 text-green-600" />
+            </div>
+            <h1 className="text-3xl font-bold text-foreground mb-2">Payment Approved!</h1>
+            <p className="text-muted-foreground mb-2">Your order is being processed</p>
+            <p className="text-5xl font-bold text-primary mb-8">#{orderNumber}</p>
+            <button
+              onClick={() => navigate({ to: "/orders" })}
+              className="w-full rounded-xl bg-primary px-6 py-4 text-lg font-semibold text-primary-foreground hover:bg-primary/90 shadow-lg shadow-primary/25"
+            >
+              View Order
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    if (paymentRejected) {
+      return (
+        <div className="min-h-screen bg-background">
+          <SiteHeader />
+          <div className="mx-auto max-w-lg px-4 py-16 text-center">
+            <div className="rounded-full bg-red-100 p-4 w-24 h-24 mx-auto mb-6 flex items-center justify-center">
+              <XCircle className="h-12 w-12 text-red-600" />
+            </div>
+            <h1 className="text-3xl font-bold text-foreground mb-2">Payment Rejected</h1>
+            <p className="text-muted-foreground mb-6">
+              Your payment could not be verified. Please check your payment details and try again.
+            </p>
+            <div className="flex flex-col gap-3">
+              <button
+                onClick={() => navigate({ to: "/" })}
+                className="w-full rounded-xl bg-primary px-6 py-4 text-lg font-semibold text-primary-foreground hover:bg-primary/90 shadow-lg shadow-primary/25"
+              >
+                Retry Payment
+              </button>
+              <button
+                onClick={() => toast.info("Please contact a staff member for assistance.")}
+                className="w-full rounded-xl border border-border bg-background px-6 py-4 text-lg font-semibold text-foreground hover:bg-accent"
+              >
+                Contact Staff
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // Still pending
     return (
       <div className="min-h-screen bg-background">
         <SiteHeader />
         <div className="mx-auto max-w-lg px-4 py-16 text-center">
           <div className="rounded-full bg-amber-100 p-4 w-24 h-24 mx-auto mb-6 flex items-center justify-center">
-            <Loader2 className="h-12 w-12 text-amber-600 animate-spin" />
+            <Timer className="h-12 w-12 text-amber-600 animate-pulse" />
           </div>
-          <h1 className="text-3xl font-bold text-foreground mb-2">Payment Verification Pending</h1>
+          <h1 className="text-3xl font-bold text-foreground mb-2">Payment Verification in Progress</h1>
           <p className="text-muted-foreground mb-2">Reference number</p>
           <p className="text-5xl font-bold text-primary mb-4">#{orderNumber}</p>
           <div className="rounded-xl border border-border bg-card p-4 mb-8 text-sm text-muted-foreground space-y-1">
@@ -266,14 +333,12 @@ function CartPage() {
                 Transaction ID: <span className="font-semibold text-foreground">{transactionId}</span>
               </p>
             )}
-            <p>Your order will be confirmed once the cashier verifies your payment.</p>
+            <p>Please wait while the cashier verifies your payment. This page will update automatically.</p>
           </div>
-          <button
-            onClick={handleSuccessClose}
-            className="w-full rounded-xl bg-primary px-6 py-4 text-lg font-semibold text-primary-foreground hover:bg-primary/90 shadow-lg shadow-primary/25"
-          >
-            Track My Order
-          </button>
+          <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            Waiting for verification...
+          </div>
         </div>
       </div>
     );
