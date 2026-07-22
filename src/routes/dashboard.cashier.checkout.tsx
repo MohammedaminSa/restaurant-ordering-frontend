@@ -210,6 +210,10 @@ function CashierCheckout() {
                 </p>
               )}
 
+              <p className="text-xs text-muted-foreground">
+                Session remains active. Waiter will close the table when the customer leaves.
+              </p>
+
               <div className="flex justify-center gap-3 pt-2">
                 <Button variant="outline" onClick={handlePrintReceipt}>
                   <Printer className="h-4 w-4 mr-2" />

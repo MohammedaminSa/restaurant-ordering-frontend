@@ -8,6 +8,7 @@ import {
   getCategories,
   serveOrder,
   createWaiterOrder,
+  completeSession,
   type PlacedOrder,
   type WaiterTable,
   type MenuItem,
@@ -120,6 +121,18 @@ function WaiterOrders() {
     onError: (err: any) => toast.error(err.message || "Failed to serve order"),
   });
 
+  const closeTableMutation = useMutation({
+    mutationFn: (sessionToken: string) => completeSession(sessionToken),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["waiter-tables"] });
+      queryClient.invalidateQueries({ queryKey: ["waiter-orders"] });
+      toast.success("Table closed and session completed");
+    },
+    onError: (err: any) => toast.error(err.message || "Failed to close table"),
+  });
+
+  const [confirmCloseTable, setConfirmCloseTable] = useState<WaiterTable | null>(null);
+
   const tables = (tablesQuery.data?.data || []) as WaiterTable[];
   const orders = (ordersQuery.data?.data || []) as any[];
   const categories = (categoriesQuery.data?.data || []) as Category[];
@@ -223,6 +236,31 @@ function WaiterOrders() {
           </Button>
         </div>
       </div>
+
+      {tables.filter(t => t.session_token).length > 0 && (
+        <div className="rounded-xl border border-border bg-card p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <Users className="h-4 w-4 text-muted-foreground" />
+            <h2 className="text-sm font-semibold text-foreground">Active Tables</h2>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {tables.filter(t => t.session_token).map((t) => (
+              <div key={t.id} className="flex items-center gap-2 rounded-lg border border-border bg-background px-3 py-2 text-sm">
+                <TableIcon className="h-4 w-4 text-muted-foreground" />
+                <span className="font-medium text-foreground">{t.table_number}</span>
+                <span className="text-xs text-muted-foreground">· {t.customer_name || "Guest"}</span>
+                <button
+                  onClick={() => setConfirmCloseTable(t)}
+                  disabled={closeTableMutation.isPending}
+                  className="ml-1 rounded-md px-2 py-1 text-xs font-medium text-red-600 hover:bg-red-50 disabled:opacity-50"
+                >
+                  Close
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="flex gap-1 flex-wrap">
         {["all", "pending", "preparing", "ready", "served"].map((f) => (
@@ -510,6 +548,38 @@ function WaiterOrders() {
               <Button onClick={handleCreateOrder} disabled={createOrderMutation.isPending || cart.length === 0 || !selectedTable || (!selectedTable.session_token && !customerName.trim()) || (selectedPaymentMethod !== 'cash' && !transactionId.trim())}>
                 {createOrderMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Send className="h-4 w-4 mr-1" />}
                 Send to Kitchen
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {confirmCloseTable && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setConfirmCloseTable(null)}>
+          <div className="w-full max-w-md rounded-xl border border-border bg-card p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
+            <h2 className="font-serif text-xl text-foreground mb-2">Close Table {confirmCloseTable.table_number}?</h2>
+            <p className="text-sm text-muted-foreground mb-1">
+              Customer: <span className="font-medium text-foreground">{confirmCloseTable.customer_name || "Guest"}</span>
+            </p>
+            <p className="text-sm text-muted-foreground mb-4">
+              This will mark the session as completed and free the table for the next customer.
+            </p>
+            <div className="flex gap-3">
+              <Button variant="outline" onClick={() => setConfirmCloseTable(null)} className="flex-1">Cancel</Button>
+              <Button
+                onClick={() => {
+                  closeTableMutation.mutate(confirmCloseTable.session_token!, {
+                    onSuccess: () => setConfirmCloseTable(null),
+                  });
+                }}
+                disabled={closeTableMutation.isPending}
+                className="flex-1 bg-red-600 hover:bg-red-700 text-white"
+              >
+                {closeTableMutation.isPending ? (
+                  <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Closing...</>
+                ) : (
+                  "Close Table"
+                )}
               </Button>
             </div>
           </div>
