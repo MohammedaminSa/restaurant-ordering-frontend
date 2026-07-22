@@ -988,9 +988,17 @@ export const getMyRestaurant = async (): Promise<ApiResponse<Restaurant>> => {
  * Update own restaurant settings (restaurant_admin)
  */
 export const updateMyRestaurant = async (data: {
-  payment_details?: PaymentDetails;
+  name?: string;
   description?: string;
   logo_url?: string;
+  address?: string;
+  phone?: string;
+  email?: string;
+  currency?: string;
+  timezone?: string;
+  tax_rate?: number;
+  service_charge_rate?: number;
+  payment_details?: PaymentDetails;
   settings?: Record<string, any>;
 }): Promise<ApiResponse<Restaurant>> => {
   const response = await api.patch('/restaurants/my', data);
