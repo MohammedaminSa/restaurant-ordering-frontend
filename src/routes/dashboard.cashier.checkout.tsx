@@ -17,7 +17,7 @@ import {
   Clock,
   Banknote,
 } from "lucide-react";
-import { getActiveSessions, getSessionBill, approvePayment, recordPayment } from "@/lib/api";
+import { getActiveSessions, getSessionBill, approvePayment, rejectPayment } from "@/lib/api";
 
 export const Route = createFileRoute("/dashboard/cashier/checkout")({
   component: CashierCheckout,
@@ -135,18 +135,17 @@ function CashierCheckout() {
     },
   });
 
-  const recordMutation = useMutation({
-    mutationFn: (data: { session_token: string; amount: number; payment_method: string }) =>
-      recordPayment(data),
-    onSuccess: (response) => {
+  const rejectMutation = useMutation({
+    mutationFn: (sessionToken: string) => rejectPayment(sessionToken),
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["cashier-active-sessions"] });
-      queryClient.invalidateQueries({ queryKey: ["cashier-today-transactions"] });
-      setPaymentResult(response.data);
-      setStep("complete");
-      toast.success("Cash payment recorded!");
+      setSelectedSession(null);
+      setBill(null);
+      setStep("list");
+      toast.success("Payment rejected");
     },
     onError: (error: any) => {
-      toast.error(error?.message || "Failed to record payment");
+      toast.error(error?.message || "Failed to reject payment");
     },
   });
 
@@ -173,13 +172,9 @@ function CashierCheckout() {
     approveMutation.mutate(selectedSession.session_token);
   };
 
-  const handleRecordCash = () => {
-    if (!selectedSession || !bill) return;
-    recordMutation.mutate({
-      session_token: selectedSession.session_token,
-      amount: parseFloat(bill.bill.total_amount),
-      payment_method: "cash",
-    });
+  const handleReject = () => {
+    if (!selectedSession) return;
+    rejectMutation.mutate(selectedSession.session_token);
   };
 
   const handleNew = () => {
@@ -193,16 +188,8 @@ function CashierCheckout() {
     window.print();
   };
 
-  const hasNonCashPending = bill?.orders?.some(
-    (o: any) => o.payment_method && o.payment_method !== "cash" && o.payment_status === "unpaid"
-  ) || false;
-
-  const hasCashPending = bill?.orders?.some(
-    (o: any) => o.payment_method === "cash" && o.payment_status === "unpaid"
-  ) || false;
-
   const pendingOrders = bill?.orders?.filter(
-    (o: any) => o.payment_method && o.payment_method !== "cash" && o.payment_status === "unpaid"
+    (o: any) => o.status === "awaiting_payment" && o.payment_status === "unpaid"
   ) || [];
 
   const paymentMethodIcon = (method: string) => {
@@ -369,14 +356,14 @@ function CashierCheckout() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
-                {hasNonCashPending && (
+                {pendingOrders.length > 0 && (
                   <>
                     {pendingOrders.map((order: any) => (
                       <div key={order.id} className="rounded-lg border border-amber-200 bg-amber-50 p-5">
                         <div className="flex items-center gap-2 mb-3">
                           <AlertCircle className="h-5 w-5 text-amber-600" />
                           <h3 className="font-semibold text-amber-800 text-sm">
-                            Customer Submitted Payment
+                            Payment Pending Verification
                           </h3>
                         </div>
                         <div className="border-t border-amber-200 pt-3 space-y-2 text-sm">
@@ -386,10 +373,12 @@ function CashierCheckout() {
 
                             <span className="text-amber-600">Payment Method</span>
                             <span className="font-semibold text-amber-900 text-right capitalize">
-                              {order.payment_method === "telebirr" ? "Digital Wallet" : order.payment_method?.replace(/_/g, " ")}
+                              {order.payment_method === "cash" ? "Cash" :
+                               order.payment_method === "telebirr" ? "Digital Wallet" :
+                               order.payment_method?.replace(/_/g, " ")}
                             </span>
 
-                            {order.payment_account && (
+                            {order.payment_method !== "cash" && order.payment_account && (
                               <>
                                 {order.payment_method === "telebirr" ? (
                                   <>
@@ -427,59 +416,44 @@ function CashierCheckout() {
                       </div>
                     ))}
 
-                    <Button
-                      onClick={handleApprove}
-                      disabled={approveMutation.isPending}
-                      className="w-full bg-emerald-600 hover:bg-emerald-700"
-                    >
-                      {approveMutation.isPending ? (
-                        <>
-                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                          Approving...
-                        </>
-                      ) : (
-                        <>
-                          <CheckCircle2 className="h-4 w-4 mr-2" />
-                          Approve Payment
-                        </>
-                      )}
-                    </Button>
-                  </>
-                )}
-
-                {hasCashPending && !hasNonCashPending && (
-                  <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-5">
-                    <div className="flex items-center gap-2 mb-3">
-                      <Banknote className="h-5 w-5 text-emerald-600" />
-                      <h3 className="font-semibold text-emerald-800 text-sm">
-                        Cash Payment
-                      </h3>
-                    </div>
-                    <div className="border-t border-emerald-200 pt-3 space-y-4">
-                      <div className="flex justify-between text-sm">
-                        <span className="text-emerald-600">Total Amount Due</span>
-                        <span className="font-bold text-emerald-900">{fmt(parseFloat(bill.bill.total_amount))}</span>
-                      </div>
-
+                    <div className="flex gap-2">
                       <Button
-                        onClick={handleRecordCash}
-                        disabled={recordMutation.isPending}
-                        className="w-full bg-emerald-600 hover:bg-emerald-700"
+                        onClick={handleApprove}
+                        disabled={approveMutation.isPending}
+                        className="flex-1 bg-emerald-600 hover:bg-emerald-700"
                       >
-                        {recordMutation.isPending ? (
+                        {approveMutation.isPending ? (
                           <>
                             <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                            Recording...
+                            Approving...
                           </>
                         ) : (
                           <>
-                            <Banknote className="h-4 w-4 mr-2" />
-                            Record Cash Payment
+                            <CheckCircle2 className="h-4 w-4 mr-2" />
+                            Approve Payment
+                          </>
+                        )}
+                      </Button>
+                      <Button
+                        onClick={handleReject}
+                        disabled={rejectMutation.isPending}
+                        variant="destructive"
+                        className="flex-1"
+                      >
+                        {rejectMutation.isPending ? (
+                          <>
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            Rejecting...
+                          </>
+                        ) : (
+                          <>
+                            <AlertCircle className="h-4 w-4 mr-2" />
+                            Reject Payment
                           </>
                         )}
                       </Button>
                     </div>
-                  </div>
+                  </>
                 )}
 
                 <div className="rounded-lg bg-accent/5 p-4 space-y-2">

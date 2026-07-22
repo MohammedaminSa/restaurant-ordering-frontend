@@ -28,7 +28,8 @@ export const Route = createFileRoute("/dashboard/kitchen/orders")({
 });
 
 const statusConfig: Record<string, { label: string; color: string; bg: string; dot: string }> = {
-  pending: { label: "Payment Approved", color: "text-amber-600 dark:text-amber-400", bg: "bg-amber-50 dark:bg-amber-950/30", dot: "bg-amber-500" },
+  confirmed: { label: "Payment Approved", color: "text-amber-600 dark:text-amber-400", bg: "bg-amber-50 dark:bg-amber-950/30", dot: "bg-amber-500" },
+  pending: { label: "Pending", color: "text-gray-600 dark:text-gray-400", bg: "bg-gray-50 dark:bg-gray-950/30", dot: "bg-gray-500" },
   preparing: { label: "Preparing", color: "text-orange-600 dark:text-orange-400", bg: "bg-orange-50 dark:bg-orange-950/30", dot: "bg-orange-500" },
   ready: { label: "Ready", color: "text-emerald-600 dark:text-emerald-400", bg: "bg-emerald-50 dark:bg-emerald-950/30", dot: "bg-emerald-500" },
   served: { label: "Served", color: "text-blue-600 dark:text-blue-400", bg: "bg-blue-50 dark:bg-blue-950/30", dot: "bg-blue-500" },
@@ -85,14 +86,14 @@ function KitchenOrders() {
   });
 
   const acceptAll = () => {
-    orders.filter((o: any) => o.status === "pending").forEach((o: any) => {
+    orders.filter((o: any) => o.status === "confirmed").forEach((o: any) => {
       updateMutation.mutate({ orderId: o.id, status: "preparing" });
     });
   };
 
   const counts = {
     all: orders.length,
-    pending: orders.filter((o: any) => o.status === "pending").length,
+    confirmed: orders.filter((o: any) => o.status === "confirmed").length,
     preparing: orders.filter((o: any) => o.status === "preparing").length,
     ready: orders.filter((o: any) => o.status === "ready").length,
   };
@@ -126,9 +127,9 @@ function KitchenOrders() {
               <Bell className="h-4 w-4" />New orders!
             </div>
           )}
-          {counts.pending > 1 && (
+          {counts.confirmed > 1 && (
             <Button variant="outline" size="sm" onClick={acceptAll} disabled={updateMutation.isPending}>
-              Accept All ({counts.pending})
+              Start All ({counts.confirmed})
             </Button>
           )}
           <Button variant="ghost" size="sm" onClick={() => queryClient.invalidateQueries({ queryKey: ["kitchen-orders"] })}>
@@ -145,7 +146,7 @@ function KitchenOrders() {
         <div className="flex gap-1 flex-wrap">
           {[
             { key: "all", label: "All", count: counts.all },
-            { key: "pending", label: "Payment Approved", count: counts.pending },
+            { key: "confirmed", label: "Payment Approved", count: counts.confirmed },
             { key: "preparing", label: "Preparing", count: counts.preparing },
             { key: "ready", label: "Ready", count: counts.ready },
           ].map((t) => (
@@ -183,7 +184,7 @@ function KitchenOrders() {
         <div className="rounded-xl border border-border bg-card py-16 text-center">
           <ClipboardList className="h-12 w-12 mx-auto mb-3 text-muted-foreground/40" />
           <p className="font-serif text-xl text-foreground mb-1">
-            {search ? "No matching orders" : statusTab === "all" ? "No orders yet" : statusTab === "pending" ? "All payment approved orders processed" : `All ${statusTab} orders cleared`}
+            {search ? "No matching orders" : statusTab === "all" ? "No orders yet" : statusTab === "confirmed" ? "All payment approved orders processed" : `All ${statusTab} orders cleared`}
           </p>
           <p className="text-sm text-muted-foreground">
             {search ? "Try a different search" : "Approved orders appear here when payment is verified"}
@@ -215,7 +216,7 @@ function KitchenOrders() {
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex items-center gap-3">
                       <div className={`rounded-lg ${cfg.bg} p-2.5`}>
-                        {order.status === "pending" ? <Clock className={`h-5 w-5 ${cfg.color}`} /> :
+                        {order.status === "confirmed" ? <Clock className={`h-5 w-5 ${cfg.color}`} /> :
                          order.status === "preparing" ? <Flame className={`h-5 w-5 ${cfg.color}`} /> :
                          <CheckCircle2 className={`h-5 w-5 ${cfg.color}`} />}
                       </div>
@@ -265,7 +266,7 @@ function KitchenOrders() {
                   )}
 
                   <div className="flex gap-2">
-                    {order.status === "pending" && (
+                    {order.status === "confirmed" && (
                       <Button onClick={() => updateMutation.mutate({ orderId: order.id, status: "preparing" })} disabled={updateMutation.isPending} className="flex-1">
                         {updateMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Flame className="h-4 w-4 mr-1" />}
                         Start Preparing

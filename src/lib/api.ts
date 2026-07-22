@@ -609,6 +609,22 @@ export const approvePayment = async (sessionToken: string): Promise<ApiResponse<
 };
 
 /**
+ * Reject pending payment (Protected - cashier)
+ */
+export const rejectPayment = async (sessionToken: string): Promise<ApiResponse<null>> => {
+  const response = await api.post('/cashier/payments/reject', { session_token: sessionToken });
+  return response.data;
+};
+
+/**
+ * Get notifications for a session (Public - customer)
+ */
+export const getSessionNotifications = async (sessionToken: string): Promise<ApiResponse<any[]>> => {
+  const response = await api.get(`/sessions/${sessionToken}/notifications`);
+  return response.data;
+};
+
+/**
  * Get all active sessions (Protected - cashier)
  */
 export const getActiveSessions = async (restaurantId?: string): Promise<ApiResponse<any[]>> => {
