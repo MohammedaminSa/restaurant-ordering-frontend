@@ -28,7 +28,7 @@ export const Route = createFileRoute("/dashboard/kitchen/orders")({
 });
 
 const statusConfig: Record<string, { label: string; color: string; bg: string; dot: string }> = {
-  pending: { label: "Pending", color: "text-amber-600 dark:text-amber-400", bg: "bg-amber-50 dark:bg-amber-950/30", dot: "bg-amber-500" },
+  pending: { label: "Payment Approved", color: "text-amber-600 dark:text-amber-400", bg: "bg-amber-50 dark:bg-amber-950/30", dot: "bg-amber-500" },
   preparing: { label: "Preparing", color: "text-orange-600 dark:text-orange-400", bg: "bg-orange-50 dark:bg-orange-950/30", dot: "bg-orange-500" },
   ready: { label: "Ready", color: "text-emerald-600 dark:text-emerald-400", bg: "bg-emerald-50 dark:bg-emerald-950/30", dot: "bg-emerald-500" },
   served: { label: "Served", color: "text-blue-600 dark:text-blue-400", bg: "bg-blue-50 dark:bg-blue-950/30", dot: "bg-blue-500" },
@@ -145,7 +145,7 @@ function KitchenOrders() {
         <div className="flex gap-1 flex-wrap">
           {[
             { key: "all", label: "All", count: counts.all },
-            { key: "pending", label: "Pending", count: counts.pending },
+            { key: "pending", label: "Payment Approved", count: counts.pending },
             { key: "preparing", label: "Preparing", count: counts.preparing },
             { key: "ready", label: "Ready", count: counts.ready },
           ].map((t) => (
@@ -183,10 +183,10 @@ function KitchenOrders() {
         <div className="rounded-xl border border-border bg-card py-16 text-center">
           <ClipboardList className="h-12 w-12 mx-auto mb-3 text-muted-foreground/40" />
           <p className="font-serif text-xl text-foreground mb-1">
-            {search ? "No matching orders" : statusTab === "all" ? "No orders yet" : `All ${statusTab} orders cleared`}
+            {search ? "No matching orders" : statusTab === "all" ? "No orders yet" : statusTab === "pending" ? "All payment approved orders processed" : `All ${statusTab} orders cleared`}
           </p>
           <p className="text-sm text-muted-foreground">
-            {search ? "Try a different search" : "Orders appear here when placed"}
+            {search ? "Try a different search" : "Approved orders appear here when payment is verified"}
           </p>
         </div>
       )}

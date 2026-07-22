@@ -71,7 +71,6 @@ const navItems: NavItem[] = [
   { label: "Tables", icon: TableIcon, to: "/dashboard/waiter/tables", roles: ["waiter"] },
   { label: "Notifications", icon: Bell, to: "/dashboard/waiter/notifications", roles: ["waiter"] },
   { label: "Settings", icon: Settings, to: "/dashboard/waiter/settings", roles: ["waiter"] },
-  { label: "Overview", icon: LayoutDashboard, to: "/dashboard/kitchen", roles: ["kitchen_staff"] },
   { label: "Orders", icon: ClipboardList, to: "/dashboard/kitchen/orders", roles: ["kitchen_staff"] },
   { label: "Menu Availability", icon: Utensils, to: "/dashboard/kitchen/menu", roles: ["kitchen_staff"] },
   { label: "Notifications", icon: Bell, to: "/dashboard/kitchen/notifications", roles: ["kitchen_staff"] },
