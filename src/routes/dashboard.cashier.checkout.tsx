@@ -22,11 +22,91 @@ import {
   Banknote,
   Smartphone,
   Building2,
+  Phone,
+  Hash,
+  User,
+  Landmark,
 } from "lucide-react";
 
 export const Route = createFileRoute("/dashboard/cashier/checkout")({
   component: CashierCheckout,
 });
+
+function PaymentDetailsBlock({ order }: { order: any }) {
+  const method = order.payment_method;
+  const isCash = method === "cash";
+
+  return (
+    <div className="space-y-2">
+      {/* Payment method + details */}
+      <div className="flex items-center gap-2">
+        <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+          {method === "cash" ? "Cash" : method === "telebirr" ? "Digital Wallet" : "Bank Transfer"}
+        </span>
+      </div>
+
+      {/* Customer info */}
+      <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
+        {order.customer_name && (
+          <span className="flex items-center gap-1.5 text-muted-foreground">
+            <User className="h-3.5 w-3.5" />
+            {order.customer_name}
+          </span>
+        )}
+        {order.customer_phone && (
+          <span className="flex items-center gap-1.5 text-muted-foreground">
+            <Phone className="h-3.5 w-3.5" />
+            {order.customer_phone}
+          </span>
+        )}
+      </div>
+
+      {/* Transaction ID for non-cash */}
+      {!isCash && order.transaction_id && (
+        <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+          <Hash className="h-3.5 w-3.5" />
+          <span>Transaction ID: <span className="font-mono font-medium text-foreground">{order.transaction_id}</span></span>
+        </div>
+      )}
+
+      {/* Payment account details (the account the customer paid to) */}
+      {!isCash && order.payment_account && (
+        <div className="rounded-lg border border-border/60 bg-muted/30 p-3 text-sm space-y-1">
+          {order.payment_account.account_name && (
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <Landmark className="h-3.5 w-3.5 shrink-0" />
+              <span>Account: <span className="font-medium text-foreground">{order.payment_account.account_name}</span></span>
+            </div>
+          )}
+          {order.payment_account.phone && (
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <Phone className="h-3.5 w-3.5 shrink-0" />
+              <span>Phone: <span className="font-medium text-foreground">{order.payment_account.phone}</span></span>
+            </div>
+          )}
+          {order.payment_account.bank_name && (
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <Building2 className="h-3.5 w-3.5 shrink-0" />
+              <span>Bank: <span className="font-medium text-foreground">{order.payment_account.bank_name}</span></span>
+            </div>
+          )}
+          {order.payment_account.account_holder && (
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <User className="h-3.5 w-3.5 shrink-0" />
+              <span>Holder: <span className="font-medium text-foreground">{order.payment_account.account_holder}</span></span>
+            </div>
+          )}
+          {order.payment_account.account_number && (
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <Hash className="h-3.5 w-3.5 shrink-0" />
+              <span>Account #: <span className="font-mono font-medium text-foreground">{order.payment_account.account_number}</span></span>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
 
 function CashierCheckout() {
   const user = useAuthStore((s) => s.user);
@@ -172,6 +252,7 @@ function CashierCheckout() {
                   key={order.id}
                   className="rounded-xl border border-amber-200 bg-card p-5"
                 >
+                  {/* Header: order number + table */}
                   <div className="flex items-start justify-between gap-4 mb-4">
                     <div className="flex items-center gap-3">
                       <div className="rounded-lg bg-amber-50 p-2.5">
@@ -186,9 +267,6 @@ function CashierCheckout() {
                             Table {order.table_number}
                           </span>
                         </div>
-                        {order.customer_name && (
-                          <p className="text-xs text-muted-foreground">{order.customer_name}</p>
-                        )}
                       </div>
                     </div>
                     <div className="flex items-center gap-2 text-sm">
@@ -199,7 +277,13 @@ function CashierCheckout() {
                     </div>
                   </div>
 
-                  <div className="space-y-1 mb-4">
+                  {/* Payment details block */}
+                  <div className="mb-4">
+                    <PaymentDetailsBlock order={order} />
+                  </div>
+
+                  {/* Order items */}
+                  <div className="space-y-1 mb-4 border-t border-border pt-3">
                     {order.items?.map((item: any) => (
                       <div key={item.id} className="flex items-center gap-2 text-sm text-muted-foreground">
                         <span className="font-medium text-foreground">{item.quantity}x</span>
@@ -208,6 +292,7 @@ function CashierCheckout() {
                     ))}
                   </div>
 
+                  {/* Total + actions */}
                   <div className="flex items-center justify-between border-t border-border pt-4">
                     <span className="font-semibold text-foreground">{fmt(parseFloat(order.total_amount))}</span>
                     <div className="flex gap-2">
@@ -272,6 +357,7 @@ function CashierCheckout() {
                   key={order.id}
                   className="rounded-xl border border-red-200 bg-card p-5"
                 >
+                  {/* Header: order number + table */}
                   <div className="flex items-start justify-between gap-4 mb-4">
                     <div className="flex items-center gap-3">
                       <div className="rounded-lg bg-red-50 p-2.5">
@@ -286,9 +372,6 @@ function CashierCheckout() {
                             Table {order.table_number}
                           </span>
                         </div>
-                        {order.customer_name && (
-                          <p className="text-xs text-muted-foreground">{order.customer_name}</p>
-                        )}
                       </div>
                     </div>
                     <div className="flex items-center gap-2 text-sm">
@@ -299,7 +382,13 @@ function CashierCheckout() {
                     </div>
                   </div>
 
-                  <div className="space-y-1 mb-4">
+                  {/* Payment details block */}
+                  <div className="mb-4">
+                    <PaymentDetailsBlock order={order} />
+                  </div>
+
+                  {/* Order items */}
+                  <div className="space-y-1 mb-4 border-t border-border pt-3">
                     {order.items?.map((item: any) => (
                       <div key={item.id} className="flex items-center gap-2 text-sm text-muted-foreground">
                         <span className="font-medium text-foreground">{item.quantity}x</span>
@@ -308,6 +397,7 @@ function CashierCheckout() {
                     ))}
                   </div>
 
+                  {/* Total + actions */}
                   <div className="flex items-center justify-between border-t border-border pt-4">
                     <span className="font-semibold text-foreground">{fmt(parseFloat(order.total_amount))}</span>
                     <Button
