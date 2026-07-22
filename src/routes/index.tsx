@@ -83,7 +83,7 @@ function Menu() {
       <section id="menu" className="mx-auto max-w-6xl px-4 py-16">
         <div className="mb-10 flex flex-wrap items-end justify-between gap-4">
           <div>
-            <h2 className="font-serif text-3xl text-foreground md:text-4xl">Tonight's Menu</h2>
+            <h2 className="font-serif text-3xl text-foreground md:text-4xl">Today's Menu</h2>
             <p className="mt-1 text-sm text-muted-foreground">Tap a dish to see ingredients and prep time.</p>
           </div>
           <div className="flex flex-wrap gap-2">
