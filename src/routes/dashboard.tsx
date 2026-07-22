@@ -64,7 +64,6 @@ const navItems: NavItem[] = [
   { label: "Reports", icon: TrendingUp, to: "/dashboard/admin/reports", roles: ["restaurant_admin"] },
   { label: "Customization", icon: Smartphone, to: "/dashboard/admin/customization", roles: ["restaurant_admin"] },
   { label: "Settings", icon: Settings, to: "/dashboard/admin/settings", roles: ["super_admin", "restaurant_admin"] },
-  { label: "Overview", icon: LayoutDashboard, to: "/dashboard/cashier", roles: ["cashier"] },
   { label: "Payment Verification", icon: DollarSign, to: "/dashboard/cashier/checkout", roles: ["cashier"] },
   { label: "Transactions", icon: History, to: "/dashboard/cashier/transactions", roles: ["cashier"] },
   { label: "Settings", icon: Settings, to: "/dashboard/cashier/settings", roles: ["cashier"] },
