@@ -6,6 +6,7 @@ import { SiteHeader } from "@/components/site-header";
 import { useCart, fmt } from "@/lib/cart";
 import { toast } from "sonner";
 import { Plus, Clock, ImageOff } from "lucide-react";
+import heroImg from "@/assets/hero.jpg";
 
 export const Route = createFileRoute("/")({
   component: Menu,
@@ -60,7 +61,7 @@ function Menu() {
       )}
 
       <section className="relative overflow-hidden border-b border-border/60">
-        <img src={heroSettings?.background_image || "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=1600"} alt={`${restaurantName} dining room`} width={1600} height={1024}
+        <img src={heroSettings?.background_image || heroImg} alt={`${restaurantName} dining room`} width={1600} height={1024}
           className="absolute inset-0 h-full w-full object-cover opacity-60" />
         <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
         <div className="relative mx-auto max-w-6xl px-4 py-16 sm:py-24 md:py-32">
