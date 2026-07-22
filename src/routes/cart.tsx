@@ -179,6 +179,7 @@ function CartPage() {
 
       setStep('confirmation');
       setOrderNumber(response.data.order_number);
+      localStorage.setItem("pendingOrder", "true");
       clear();
       setOrderInstructions("");
     } catch (error: any) {
@@ -247,11 +248,11 @@ function CartPage() {
       <div className="min-h-screen bg-background">
         <SiteHeader />
         <div className="mx-auto max-w-lg px-4 py-16 text-center">
-          <div className="rounded-full bg-green-100 p-4 w-24 h-24 mx-auto mb-6 flex items-center justify-center">
-            <CheckCircle className="h-12 w-12 text-green-600" />
+          <div className="rounded-full bg-amber-100 p-4 w-24 h-24 mx-auto mb-6 flex items-center justify-center">
+            <Loader2 className="h-12 w-12 text-amber-600 animate-spin" />
           </div>
-          <h1 className="text-3xl font-bold text-foreground mb-2">Order Placed!</h1>
-          <p className="text-muted-foreground mb-2">Your order number is</p>
+          <h1 className="text-3xl font-bold text-foreground mb-2">Payment Verification Pending</h1>
+          <p className="text-muted-foreground mb-2">Reference number</p>
           <p className="text-5xl font-bold text-primary mb-4">#{orderNumber}</p>
           <div className="rounded-xl border border-border bg-card p-4 mb-8 text-sm text-muted-foreground space-y-1">
             <p>
@@ -265,7 +266,7 @@ function CartPage() {
                 Transaction ID: <span className="font-semibold text-foreground">{transactionId}</span>
               </p>
             )}
-            <p>We'll notify you when your order is ready.</p>
+            <p>Your order will be confirmed once the cashier verifies your payment.</p>
           </div>
           <button
             onClick={handleSuccessClose}

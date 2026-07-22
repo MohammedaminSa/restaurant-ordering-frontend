@@ -1,9 +1,11 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { getSessionOrders, getSessionByToken, type PlacedOrder } from "@/lib/api";
+import { getSessionOrders, getSessionByToken, getSessionNotifications, type PlacedOrder } from "@/lib/api";
 import { SiteHeader } from "@/components/site-header";
 import { fmt } from "@/lib/cart";
-import { Clock, ChefHat, CheckCircle2, Loader2, Package, AlertCircle, PartyPopper } from "lucide-react";
+import { Clock, ChefHat, CheckCircle2, Loader2, Package, AlertCircle, PartyPopper, Timer } from "lucide-react";
+import { useEffect } from "react";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/orders")({
   component: OrdersPage,
@@ -14,6 +16,7 @@ function OrdersPage() {
   const sessionToken = localStorage.getItem("sessionToken");
   const sessionDataStr = localStorage.getItem("sessionData");
   const sessionData = sessionDataStr ? JSON.parse(sessionDataStr) : null;
+  const hasPendingOrder = localStorage.getItem("pendingOrder") === "true";
 
   // Poll session status to detect when cashier completes the bill
   const { data: sessionDataRes } = useQuery({
@@ -30,6 +33,7 @@ function OrdersPage() {
     localStorage.removeItem("sessionToken");
     localStorage.removeItem("sessionData");
     localStorage.removeItem("pendingTableInfo");
+    localStorage.removeItem("pendingOrder");
     localStorage.removeItem("bistro-cart-v1");
     return <SessionCompleted />;
   }
@@ -40,6 +44,38 @@ function OrdersPage() {
     enabled: !!sessionToken,
     refetchInterval: 10000,
   });
+
+  // Poll notifications
+  const { data: notifData } = useQuery({
+    queryKey: ["session-notifications", sessionToken],
+    queryFn: () => getSessionNotifications(sessionToken!),
+    enabled: !!sessionToken,
+    refetchInterval: 15000,
+  });
+
+  const orders = data?.data || [];
+  const notifications = notifData?.data || [];
+
+  // Show toast for new notifications
+  useEffect(() => {
+    if (notifications.length > 0) {
+      const latest = notifications[0];
+      if (latest.type === "payment_approved") {
+        toast.success(latest.message || "Payment approved! Your order is being processed.");
+        localStorage.removeItem("pendingOrder");
+      } else if (latest.type === "payment_rejected") {
+        toast.error(latest.message || "Payment could not be verified. Please try again.");
+        localStorage.removeItem("pendingOrder");
+      }
+    }
+  }, [notifications.length]);
+
+  // Clear pending flag when orders appear
+  useEffect(() => {
+    if (orders.length > 0) {
+      localStorage.removeItem("pendingOrder");
+    }
+  }, [orders.length]);
 
   if (!sessionToken) {
     return (
@@ -63,8 +99,6 @@ function OrdersPage() {
       </div>
     );
   }
-
-  const orders = data?.data || [];
 
   return (
     <div className="min-h-screen bg-background">
@@ -109,8 +143,25 @@ function OrdersPage() {
           </div>
         )}
 
-        {/* Empty State */}
-        {!isLoading && !error && orders.length === 0 && (
+        {/* Pending Verification State */}
+        {!isLoading && !error && orders.length === 0 && hasPendingOrder && (
+          <div className="rounded-xl border border-amber-200 bg-amber-50 dark:bg-amber-950/20 p-12 text-center">
+            <Timer className="mx-auto h-16 w-16 text-amber-500 mb-4 animate-pulse" />
+            <h2 className="font-serif text-xl text-foreground mb-2">Payment Verification Pending</h2>
+            <p className="text-sm text-muted-foreground mb-6">
+              Your order has been submitted. It will appear here once the cashier verifies your payment.
+            </p>
+            <button
+              onClick={() => navigate({ to: "/" })}
+              className="inline-flex items-center rounded-lg bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
+            >
+              Order More
+            </button>
+          </div>
+        )}
+
+        {/* Empty State - no orders placed */}
+        {!isLoading && !error && orders.length === 0 && !hasPendingOrder && (
           <div className="rounded-xl border border-border bg-card p-12 text-center">
             <ChefHat className="mx-auto h-16 w-16 text-muted-foreground mb-4" />
             <h2 className="font-serif text-xl text-foreground mb-2">No orders yet</h2>
