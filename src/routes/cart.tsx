@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { useCart, fmt } from "@/lib/cart";
 import { placeOrder, createSession, getSessionByToken, type PaymentDetails } from "@/lib/api";
 import { toast } from "sonner";
-import { ShoppingBag, ArrowLeft, CheckCircle, Loader2, MapPin, User, Table as TableIcon, Trash2, Plus, Minus, Smartphone, Building2, Banknote, CreditCard, ChevronRight, Wallet, Landmark } from "lucide-react";
+import { ShoppingBag, ArrowLeft, CheckCircle, Loader2, MapPin, User, Table as TableIcon, Trash2, Plus, Minus, Smartphone, Building2, Banknote, Wallet, Landmark } from "lucide-react";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { SiteHeader } from "@/components/site-header";
@@ -18,7 +18,6 @@ function CartPage() {
   const [submitting, setSubmitting] = useState(false);
   const [orderInstructions, setOrderInstructions] = useState("");
   const [orderNumber, setOrderNumber] = useState<number | null>(null);
-  const [showCustomerForm, setShowCustomerForm] = useState(false);
   const [pendingTableInfo, setPendingTableInfo] = useState<any>(null);
   const [paymentDetails, setPaymentDetails] = useState<PaymentDetails | null>(null);
   const [fetchingSession, setFetchingSession] = useState(false);
@@ -29,6 +28,7 @@ function CartPage() {
   const [selectedAccount, setSelectedAccount] = useState<any>(null);
   const [transactionId, setTransactionId] = useState('');
   const [payerName, setPayerName] = useState('');
+  const [customerPhone, setCustomerPhone] = useState('');
 
   const sessionToken = localStorage.getItem("sessionToken");
   const sessionDataStr = localStorage.getItem("sessionData");
@@ -100,29 +100,23 @@ function CartPage() {
       return;
     }
 
-    // If no session, show customer form to create session
-    if (!sessionToken) {
-      if (!pendingTableInfo) {
-        toast.error("Please scan a QR code to start a session");
-        return;
-      }
-      setShowCustomerForm(true);
+    if (!sessionToken && !pendingTableInfo) {
+      toast.error("Please scan a QR code to start a session");
       return;
     }
 
-    // Initialize payment form with session data
     setSelectedPaymentMethod('cash');
     setSelectedAccount(null);
     setTransactionId('');
     setPayerName(sessionData?.customer_name || '');
+    setCustomerPhone(sessionData?.customer_phone || '');
 
-    // Navigate to payment method step
     setStep('payment-method');
   };
 
   const handleConfirmOrder = async () => {
-    if (!sessionToken) {
-      toast.error("Session not found");
+    if (!payerName.trim()) {
+      toast.error("Please enter your name");
       return;
     }
 
@@ -134,6 +128,39 @@ function CartPage() {
 
     setSubmitting(true);
     try {
+      // Auto-create session if none exists
+      let token = sessionToken;
+      if (!token) {
+        if (!pendingTableInfo) {
+          toast.error("No table information found. Please scan a QR code.");
+          setSubmitting(false);
+          return;
+        }
+        const sessionResponse = await createSession({
+          table_id: pendingTableInfo.id,
+          customer_name: payerName.trim(),
+          customer_phone: customerPhone.trim() || undefined,
+        });
+        const sessionResult = sessionResponse.data;
+        const enrichedSessionData = {
+          ...sessionResult,
+          table_number: pendingTableInfo.table_number,
+          location: pendingTableInfo.location,
+          capacity: pendingTableInfo.capacity,
+          restaurant_name: pendingTableInfo.restaurant_name,
+          restaurant_logo: pendingTableInfo.restaurant_logo,
+          tax_rate: pendingTableInfo.tax_rate,
+          service_charge_rate: pendingTableInfo.service_charge_rate,
+          currency: pendingTableInfo.currency || 'ETB',
+          payment_details: pendingTableInfo.payment_details || sessionResult.payment_details,
+          orders: [],
+        };
+        localStorage.setItem("sessionToken", sessionResult.session_token);
+        localStorage.setItem("sessionData", JSON.stringify(enrichedSessionData));
+        localStorage.removeItem("pendingTableInfo");
+        token = sessionResult.session_token;
+      }
+
       const orderItems = items.map((item) => ({
         menu_item_id: item.menuItemId,
         quantity: item.quantity,
@@ -142,7 +169,7 @@ function CartPage() {
       }));
 
       const response = await placeOrder({
-        session_token: sessionToken,
+        session_token: token!,
         items: orderItems,
         special_instructions: orderInstructions.trim() || undefined,
         payment_method: selectedPaymentMethod as any,
@@ -165,54 +192,6 @@ function CartPage() {
   const handleSuccessClose = () => {
     navigate({ to: "/orders" });
   };
-
-  const handleSessionCreated = () => {
-    setShowCustomerForm(false);
-    setPendingTableInfo(null);
-    
-    // Reload session data from localStorage and merge with pending table info
-    const newSessionDataStr = localStorage.getItem("sessionData");
-    const newSessionToken = localStorage.getItem("sessionToken");
-    
-    if (newSessionDataStr && newSessionToken) {
-      const newSession = JSON.parse(newSessionDataStr);
-      
-      // If the session doesn't have table details, get them from pendingTableInfo
-      if (pendingTableInfo && !newSession.table_number) {
-        newSession.table_number = pendingTableInfo.table_number;
-        newSession.location = pendingTableInfo.location;
-        newSession.capacity = pendingTableInfo.capacity;
-        newSession.restaurant_name = pendingTableInfo.restaurant_name;
-        newSession.tax_rate = pendingTableInfo.tax_rate;
-        newSession.service_charge_rate = pendingTableInfo.service_charge_rate;
-        
-        // Save the enriched session data back to localStorage
-        localStorage.setItem("sessionData", JSON.stringify(newSession));
-      }
-      
-      setCurrentSessionData(newSession);
-      setPaymentDetails(newSession.payment_details || pendingTableInfo?.payment_details || null);
-      
-      toast.success("Session started! Select your payment method to place order.");
-    }
-  };
-
-  // Show customer form if needed
-  if (showCustomerForm && pendingTableInfo) {
-    return (
-      <div className="min-h-screen bg-background">
-        <SiteHeader />
-        <div className="mx-auto max-w-2xl px-4 py-8">
-          <div className="rounded-xl border border-blue-200 bg-blue-50 p-4 mb-4">
-            <p className="text-sm text-blue-800">
-              Please provide your information to start ordering
-            </p>
-          </div>
-          <CustomerInfoForm onSuccess={handleSessionCreated} onCancel={() => setShowCustomerForm(false)} />
-        </div>
-      </div>
-    );
-  }
 
   // Redirect if cart is empty (but NOT if on confirmation step)
   if (items.length === 0 && step !== 'confirmation') {
@@ -361,13 +340,24 @@ function CartPage() {
 
           <div className="space-y-5">
             <div>
-              <label className="block text-sm font-medium text-foreground mb-1.5">Your Name</label>
+              <label className="block text-sm font-medium text-foreground mb-1.5">Your Name *</label>
               <input
                 type="text"
                 value={payerName}
                 onChange={(e) => setPayerName(e.target.value)}
                 className="w-full rounded-xl border border-input bg-background px-4 py-3 text-sm text-foreground focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring"
                 placeholder="Enter your full name"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-1.5">Phone Number (Optional)</label>
+              <input
+                type="tel"
+                value={customerPhone}
+                onChange={(e) => setCustomerPhone(e.target.value)}
+                className="w-full rounded-xl border border-input bg-background px-4 py-3 text-sm text-foreground focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring"
+                placeholder="Enter your phone number"
               />
             </div>
 
@@ -420,7 +410,7 @@ function CartPage() {
 
           <button
             onClick={handleConfirmOrder}
-            disabled={submitting || !payerName.trim() || (selectedPaymentMethod !== 'cash' && !transactionId.trim())}
+            disabled={submitting || (selectedPaymentMethod !== 'cash' && !transactionId.trim())}
             className="w-full rounded-xl bg-primary px-6 py-4 text-lg font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-primary/25 mt-8"
           >
             {submitting ? (
@@ -789,139 +779,15 @@ function CartPage() {
               <Loader2 className="h-5 w-5 animate-spin" />
               Processing...
             </span>
-          ) : sessionToken ? (
-            "Place Order"
           ) : (
-            "Start Order"
+            "Place Order"
           )}
         </button>
         
-        {!sessionToken && pendingTableInfo && (
-          <p className="mt-3 text-center text-sm text-muted-foreground">
-            You'll provide your information before starting your order
-          </p>
-        )}
+
       </div>
     </div>
   );
 }
 
-interface CustomerInfoFormProps {
-  onSuccess: () => void;
-  onCancel: () => void;
-}
 
-function CustomerInfoForm({ onSuccess, onCancel }: CustomerInfoFormProps) {
-  const [customerName, setCustomerName] = useState("");
-  const [customerPhone, setCustomerPhone] = useState("");
-  const [submitting, setSubmitting] = useState(false);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const pendingTableInfoStr = localStorage.getItem("pendingTableInfo");
-    if (!pendingTableInfoStr) return;
-
-    setSubmitting(true);
-    try {
-      const tableInfo = JSON.parse(pendingTableInfoStr);
-      
-      const response = await createSession({
-        table_id: tableInfo.id,
-        customer_name: customerName.trim(),
-        customer_phone: customerPhone.trim() || undefined,
-      });
-
-      const sessionData = response.data;
-      
-      // Enrich session data with table information
-      const enrichedSessionData = {
-        ...sessionData,
-        table_number: tableInfo.table_number,
-        location: tableInfo.location,
-        capacity: tableInfo.capacity,
-        restaurant_name: tableInfo.restaurant_name,
-        restaurant_logo: tableInfo.restaurant_logo,
-        tax_rate: tableInfo.tax_rate,
-        service_charge_rate: tableInfo.service_charge_rate,
-        currency: tableInfo.currency || 'ETB',
-        payment_details: tableInfo.payment_details || sessionData.payment_details,
-        orders: [],
-      };
-      
-      localStorage.setItem("sessionToken", sessionData.session_token);
-      localStorage.setItem("sessionData", JSON.stringify(enrichedSessionData));
-      localStorage.removeItem("pendingTableInfo");
-
-      toast.success("Order session started!");
-      onSuccess();
-    } catch (error: any) {
-      console.error("Failed to create session:", error);
-      toast.error(error.message || "Failed to start session");
-      setSubmitting(false);
-    }
-  };
-
-  return (
-    <div className="rounded-xl border border-border bg-card p-6">
-      <h2 className="font-serif text-2xl font-bold text-foreground mb-2">Start Your Order</h2>
-      <p className="text-sm text-muted-foreground mb-6">
-        Please provide your information to begin ordering
-      </p>
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label htmlFor="name" className="block text-sm font-medium text-foreground mb-2">
-            Your Name *
-          </label>
-          <input
-            id="name"
-            type="text"
-            value={customerName}
-            onChange={(e) => setCustomerName(e.target.value)}
-            required
-            className="w-full rounded-lg border border-input bg-background px-4 py-2 text-foreground focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring"
-            placeholder="Enter your name"
-          />
-        </div>
-
-        <div>
-          <label htmlFor="phone" className="block text-sm font-medium text-foreground mb-2">
-            Phone Number (Optional)
-          </label>
-          <input
-            id="phone"
-            type="tel"
-            value={customerPhone}
-            onChange={(e) => setCustomerPhone(e.target.value)}
-            className="w-full rounded-lg border border-input bg-background px-4 py-2 text-foreground focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring"
-            placeholder="Enter your phone number"
-          />
-        </div>
-
-        <div className="flex gap-3 pt-2">
-          <button
-            type="button"
-            onClick={onCancel}
-            disabled={submitting}
-            className="flex-1 rounded-lg border border-border bg-background px-6 py-3 text-sm font-semibold text-foreground hover:bg-accent disabled:opacity-50"
-          >
-            Cancel
-          </button>
-          <button
-            type="submit"
-            disabled={submitting || !customerName.trim()}
-            className="flex-1 rounded-lg bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {submitting ? (
-              <span className="flex items-center justify-center gap-2">
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Creating...
-              </span>
-            ) : (
-              "Start Ordering"
-            )}
-          </button>
-        </div>
-      </form>
-    </div>
-  );
-}
