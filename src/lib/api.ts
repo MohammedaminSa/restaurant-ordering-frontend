@@ -511,7 +511,10 @@ export const serveOrder = async (orderId: string): Promise<ApiResponse<PlacedOrd
 };
 
 export interface CreateWaiterOrderRequest {
-  session_token: string;
+  session_token?: string;
+  table_id?: string;
+  customer_name?: string;
+  customer_phone?: string;
   items: {
     menu_item_id: string;
     quantity: number;
@@ -519,6 +522,9 @@ export interface CreateWaiterOrderRequest {
     special_instructions?: string;
   }[];
   special_instructions?: string;
+  payment_method?: 'cash' | 'card' | 'digital_wallet' | 'online' | 'telebirr' | 'bank_transfer';
+  transaction_id?: string;
+  payment_account?: Record<string, any>;
 }
 
 /**

@@ -34,11 +34,18 @@ import {
   ChevronRight,
   User,
   AlertCircle,
+  Smartphone,
+  Building2,
+  Banknote,
+  Wallet,
+  Landmark,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 
 export const Route = createFileRoute("/dashboard/waiter/orders")({
   component: WaiterOrders,
@@ -51,7 +58,11 @@ function WaiterOrders() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [cart, setCart] = useState<{ menu_item_id: string; name: string; price: number; quantity: number }[]>([]);
-  const [selectedSession, setSelectedSession] = useState<string>("");
+  const [selectedTable, setSelectedTable] = useState<WaiterTable | null>(null);
+  const [customerName, setCustomerName] = useState("");
+  const [customerPhone, setCustomerPhone] = useState("");
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string>('cash');
+  const [transactionId, setTransactionId] = useState('');
   const [orderNotes, setOrderNotes] = useState("");
   const [menuSearch, setMenuSearch] = useState("");
 
@@ -82,14 +93,19 @@ function WaiterOrders() {
   });
 
   const createOrderMutation = useMutation({
-    mutationFn: (data: { session_token: string; items: { menu_item_id: string; quantity: number }[]; special_instructions?: string }) =>
+    mutationFn: (data: Parameters<typeof createWaiterOrder>[0]) =>
       createWaiterOrder(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["waiter-orders"] });
+      queryClient.invalidateQueries({ queryKey: ["waiter-tables"] });
       toast.success("Order sent to kitchen");
       setShowCreateModal(false);
       setCart([]);
-      setSelectedSession("");
+      setSelectedTable(null);
+      setCustomerName("");
+      setCustomerPhone("");
+      setSelectedPaymentMethod('cash');
+      setTransactionId('');
       setOrderNotes("");
     },
     onError: (err: any) => toast.error(err.message || "Failed to create order"),
@@ -109,7 +125,7 @@ function WaiterOrders() {
   const categories = (categoriesQuery.data?.data || []) as Category[];
   const menuItems = (menuItemsQuery.data?.data || []) as MenuItem[];
 
-  const activeTables = tables.filter((t) => t.session_token);
+  const availableTables = tables.filter((t) => t.status !== 'maintenance');
 
   const filteredOrders = statusFilter === "all"
     ? orders
@@ -156,19 +172,33 @@ function WaiterOrders() {
   };
 
   const handleCreateOrder = () => {
-    if (!selectedSession) return toast.error("Please select a table");
+    if (!selectedTable) return toast.error("Please select a table");
     if (cart.length === 0) return toast.error("Please add at least one item");
+
+    // If table has no active session, require customer name
+    if (!selectedTable.session_token && !customerName.trim()) {
+      return toast.error("Please enter the customer's name");
+    }
+
     createOrderMutation.mutate({
-      session_token: selectedSession,
+      ...(selectedTable.session_token
+        ? { session_token: selectedTable.session_token }
+        : { table_id: selectedTable.id, customer_name: customerName.trim(), customer_phone: customerPhone.trim() || undefined }),
       items: cart.map((c) => ({ menu_item_id: c.menu_item_id, quantity: c.quantity })),
       special_instructions: orderNotes || undefined,
+      payment_method: selectedPaymentMethod as any,
+      transaction_id: selectedPaymentMethod !== 'cash' ? transactionId.trim() : undefined,
     });
   };
 
   const handleCloseModal = () => {
     setShowCreateModal(false);
     setCart([]);
-    setSelectedSession("");
+    setSelectedTable(null);
+    setCustomerName("");
+    setCustomerPhone("");
+    setSelectedPaymentMethod('cash');
+    setTransactionId('');
     setOrderNotes("");
   };
 
@@ -301,22 +331,25 @@ function WaiterOrders() {
             <div className="flex-1 overflow-y-auto p-6 space-y-5">
               <div>
                 <label className="block text-sm font-semibold text-foreground mb-3">Select Table</label>
-                {activeTables.length === 0 ? (
+                {availableTables.length === 0 ? (
                   <div className="rounded-xl border-2 border-dashed border-border p-6 text-center">
                     <Users className="h-8 w-8 mx-auto mb-2 text-muted-foreground/50" />
-                    <p className="text-sm text-muted-foreground">No active sessions. Occupy a table first.</p>
+                    <p className="text-sm text-muted-foreground">No tables available</p>
                   </div>
                 ) : (
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                    {activeTables.map((t) => (
+                    {availableTables.map((t) => (
                       <button
-                        key={t.session_token}
-                        onClick={() => setSelectedSession(t.session_token || "")}
+                        key={t.id}
+                        onClick={() => {
+                          setSelectedTable(t);
+                          setCustomerName(t.customer_name || "");
+                        }}
                         className={`rounded-lg border-2 p-3 text-left transition-all ${
-                          selectedSession === t.session_token
+                          selectedTable?.id === t.id
                             ? "border-accent bg-accent/5 ring-1 ring-accent"
                             : "border-border hover:border-accent/50 bg-background"
-                        }`}
+                        } ${t.session_token ? "" : "border-dashed"}`}
                       >
                         <div className="flex items-center gap-2 mb-1">
                           <TableIcon className="h-4 w-4 text-muted-foreground" />
@@ -324,13 +357,92 @@ function WaiterOrders() {
                         </div>
                         <div className="flex items-center gap-1 text-xs text-muted-foreground">
                           <User className="h-3 w-3" />
-                          {t.customer_name || "Guest"}
+                          {t.customer_name || (t.session_token ? "Guest" : "No session")}
                         </div>
                       </button>
                     ))}
                   </div>
                 )}
               </div>
+
+              {selectedTable && !selectedTable.session_token && (
+                <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 space-y-3">
+                  <p className="text-sm font-medium text-blue-800">New Customer</p>
+                  <div>
+                    <label className="block text-xs font-medium text-blue-700 mb-1">Customer Name *</label>
+                    <input
+                      type="text"
+                      value={customerName}
+                      onChange={(e) => setCustomerName(e.target.value)}
+                      className="w-full rounded-lg border border-blue-200 bg-white px-3 py-2 text-sm text-foreground focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring"
+                      placeholder="Enter customer name"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-blue-700 mb-1">Phone (Optional)</label>
+                    <input
+                      type="tel"
+                      value={customerPhone}
+                      onChange={(e) => setCustomerPhone(e.target.value)}
+                      className="w-full rounded-lg border border-blue-200 bg-white px-3 py-2 text-sm text-foreground focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring"
+                      placeholder="Enter phone number"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {selectedTable && (
+                <div className="space-y-3">
+                  <label className="block text-sm font-semibold text-foreground">Payment Method</label>
+                  <Select
+                    value={selectedPaymentMethod}
+                    onValueChange={(v) => {
+                      setSelectedPaymentMethod(v);
+                      if (v === 'cash') setTransactionId('');
+                    }}
+                  >
+                    <SelectTrigger className="h-11">
+                      <div className="flex items-center gap-2">
+                        {selectedPaymentMethod === 'cash' ? <Banknote className="h-4 w-4" /> : selectedPaymentMethod === 'telebirr' ? <Smartphone className="h-4 w-4" /> : <Building2 className="h-4 w-4" />}
+                        <SelectValue placeholder="Select payment method" />
+                      </div>
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="cash">
+                        <div className="flex items-center gap-2">
+                          <Banknote className="h-4 w-4" />
+                          <span>Cash — Pay at counter</span>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="telebirr">
+                        <div className="flex items-center gap-2">
+                          <Smartphone className="h-4 w-4" />
+                          <span>Digital Wallet</span>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="bank_transfer">
+                        <div className="flex items-center gap-2">
+                          <Building2 className="h-4 w-4" />
+                          <span>Bank Transfer</span>
+                        </div>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  {selectedPaymentMethod !== 'cash' && (
+                    <div>
+                      <label className="block text-xs font-medium text-foreground mb-1">Transaction ID / Reference *</label>
+                      <input
+                        type="text"
+                        value={transactionId}
+                        onChange={(e) => setTransactionId(e.target.value)}
+                        className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring"
+                        placeholder="Enter reference number"
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
 
               <div>
                 <label className="block text-sm font-semibold text-foreground mb-3">Menu Items</label>
@@ -395,7 +507,7 @@ function WaiterOrders() {
 
             <div className="border-t border-border px-6 py-4 flex items-center justify-end gap-2">
               <Button variant="outline" onClick={handleCloseModal}>Cancel</Button>
-              <Button onClick={handleCreateOrder} disabled={createOrderMutation.isPending || cart.length === 0 || !selectedSession}>
+              <Button onClick={handleCreateOrder} disabled={createOrderMutation.isPending || cart.length === 0 || !selectedTable || (!selectedTable.session_token && !customerName.trim()) || (selectedPaymentMethod !== 'cash' && !transactionId.trim())}>
                 {createOrderMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Send className="h-4 w-4 mr-1" />}
                 Send to Kitchen
               </Button>
