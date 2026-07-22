@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Smartphone, Building2, Image, Plus, Trash2, Save, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { useState, useEffect } from "react";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 export const Route = createFileRoute("/dashboard/admin/customization")({
   component: Customization,
@@ -47,6 +47,7 @@ const WALLET_TYPES = [
 
 function Customization() {
   const { user } = useAuthStore();
+  const queryClient = useQueryClient();
 
   const { data: restaurantData, isLoading: loadingRestaurant } = useQuery({
     queryKey: ['my-restaurant'],
@@ -82,6 +83,8 @@ function Customization() {
     mutationFn: (data: { payment_details: PaymentDetails; settings: Record<string, any> }) =>
       updateMyRestaurant(data),
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['my-restaurant'] });
+      queryClient.invalidateQueries({ queryKey: ['restaurant-info'] });
       toast.success('Settings saved successfully');
     },
     onError: (err: any) => toast.error(err.message || 'Failed to save settings'),
