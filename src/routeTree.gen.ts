@@ -34,10 +34,7 @@ import { Route as DashboardKitchenOrdersRouteImport } from './routes/dashboard.k
 import { Route as DashboardKitchenNotificationsRouteImport } from './routes/dashboard.kitchen.notifications'
 import { Route as DashboardKitchenMenuRouteImport } from './routes/dashboard.kitchen.menu'
 import { Route as DashboardCashierTransactionsRouteImport } from './routes/dashboard.cashier.transactions'
-import { Route as DashboardCashierTablesRouteImport } from './routes/dashboard.cashier.tables'
 import { Route as DashboardCashierSettingsRouteImport } from './routes/dashboard.cashier.settings'
-import { Route as DashboardCashierReportsRouteImport } from './routes/dashboard.cashier.reports'
-import { Route as DashboardCashierOrdersRouteImport } from './routes/dashboard.cashier.orders'
 import { Route as DashboardCashierCheckoutRouteImport } from './routes/dashboard.cashier.checkout'
 import { Route as DashboardAdminWaitersRouteImport } from './routes/dashboard.admin.waiters'
 import { Route as DashboardAdminUsersRouteImport } from './routes/dashboard.admin.users'
@@ -180,27 +177,12 @@ const DashboardCashierTransactionsRoute =
     path: '/transactions',
     getParentRoute: () => DashboardCashierRoute,
   } as any)
-const DashboardCashierTablesRoute = DashboardCashierTablesRouteImport.update({
-  id: '/tables',
-  path: '/tables',
-  getParentRoute: () => DashboardCashierRoute,
-} as any)
 const DashboardCashierSettingsRoute =
   DashboardCashierSettingsRouteImport.update({
     id: '/settings',
     path: '/settings',
     getParentRoute: () => DashboardCashierRoute,
   } as any)
-const DashboardCashierReportsRoute = DashboardCashierReportsRouteImport.update({
-  id: '/reports',
-  path: '/reports',
-  getParentRoute: () => DashboardCashierRoute,
-} as any)
-const DashboardCashierOrdersRoute = DashboardCashierOrdersRouteImport.update({
-  id: '/orders',
-  path: '/orders',
-  getParentRoute: () => DashboardCashierRoute,
-} as any)
 const DashboardCashierCheckoutRoute =
   DashboardCashierCheckoutRouteImport.update({
     id: '/checkout',
@@ -290,10 +272,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/admin/users': typeof DashboardAdminUsersRoute
   '/dashboard/admin/waiters': typeof DashboardAdminWaitersRoute
   '/dashboard/cashier/checkout': typeof DashboardCashierCheckoutRoute
-  '/dashboard/cashier/orders': typeof DashboardCashierOrdersRoute
-  '/dashboard/cashier/reports': typeof DashboardCashierReportsRoute
   '/dashboard/cashier/settings': typeof DashboardCashierSettingsRoute
-  '/dashboard/cashier/tables': typeof DashboardCashierTablesRoute
   '/dashboard/cashier/transactions': typeof DashboardCashierTransactionsRoute
   '/dashboard/kitchen/menu': typeof DashboardKitchenMenuRoute
   '/dashboard/kitchen/notifications': typeof DashboardKitchenNotificationsRoute
@@ -328,10 +307,7 @@ export interface FileRoutesByTo {
   '/dashboard/admin/users': typeof DashboardAdminUsersRoute
   '/dashboard/admin/waiters': typeof DashboardAdminWaitersRoute
   '/dashboard/cashier/checkout': typeof DashboardCashierCheckoutRoute
-  '/dashboard/cashier/orders': typeof DashboardCashierOrdersRoute
-  '/dashboard/cashier/reports': typeof DashboardCashierReportsRoute
   '/dashboard/cashier/settings': typeof DashboardCashierSettingsRoute
-  '/dashboard/cashier/tables': typeof DashboardCashierTablesRoute
   '/dashboard/cashier/transactions': typeof DashboardCashierTransactionsRoute
   '/dashboard/kitchen/menu': typeof DashboardKitchenMenuRoute
   '/dashboard/kitchen/notifications': typeof DashboardKitchenNotificationsRoute
@@ -372,10 +348,7 @@ export interface FileRoutesById {
   '/dashboard/admin/users': typeof DashboardAdminUsersRoute
   '/dashboard/admin/waiters': typeof DashboardAdminWaitersRoute
   '/dashboard/cashier/checkout': typeof DashboardCashierCheckoutRoute
-  '/dashboard/cashier/orders': typeof DashboardCashierOrdersRoute
-  '/dashboard/cashier/reports': typeof DashboardCashierReportsRoute
   '/dashboard/cashier/settings': typeof DashboardCashierSettingsRoute
-  '/dashboard/cashier/tables': typeof DashboardCashierTablesRoute
   '/dashboard/cashier/transactions': typeof DashboardCashierTransactionsRoute
   '/dashboard/kitchen/menu': typeof DashboardKitchenMenuRoute
   '/dashboard/kitchen/notifications': typeof DashboardKitchenNotificationsRoute
@@ -417,10 +390,7 @@ export interface FileRouteTypes {
     | '/dashboard/admin/users'
     | '/dashboard/admin/waiters'
     | '/dashboard/cashier/checkout'
-    | '/dashboard/cashier/orders'
-    | '/dashboard/cashier/reports'
     | '/dashboard/cashier/settings'
-    | '/dashboard/cashier/tables'
     | '/dashboard/cashier/transactions'
     | '/dashboard/kitchen/menu'
     | '/dashboard/kitchen/notifications'
@@ -455,10 +425,7 @@ export interface FileRouteTypes {
     | '/dashboard/admin/users'
     | '/dashboard/admin/waiters'
     | '/dashboard/cashier/checkout'
-    | '/dashboard/cashier/orders'
-    | '/dashboard/cashier/reports'
     | '/dashboard/cashier/settings'
-    | '/dashboard/cashier/tables'
     | '/dashboard/cashier/transactions'
     | '/dashboard/kitchen/menu'
     | '/dashboard/kitchen/notifications'
@@ -498,10 +465,7 @@ export interface FileRouteTypes {
     | '/dashboard/admin/users'
     | '/dashboard/admin/waiters'
     | '/dashboard/cashier/checkout'
-    | '/dashboard/cashier/orders'
-    | '/dashboard/cashier/reports'
     | '/dashboard/cashier/settings'
-    | '/dashboard/cashier/tables'
     | '/dashboard/cashier/transactions'
     | '/dashboard/kitchen/menu'
     | '/dashboard/kitchen/notifications'
@@ -704,32 +668,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardCashierTransactionsRouteImport
       parentRoute: typeof DashboardCashierRoute
     }
-    '/dashboard/cashier/tables': {
-      id: '/dashboard/cashier/tables'
-      path: '/tables'
-      fullPath: '/dashboard/cashier/tables'
-      preLoaderRoute: typeof DashboardCashierTablesRouteImport
-      parentRoute: typeof DashboardCashierRoute
-    }
     '/dashboard/cashier/settings': {
       id: '/dashboard/cashier/settings'
       path: '/settings'
       fullPath: '/dashboard/cashier/settings'
       preLoaderRoute: typeof DashboardCashierSettingsRouteImport
-      parentRoute: typeof DashboardCashierRoute
-    }
-    '/dashboard/cashier/reports': {
-      id: '/dashboard/cashier/reports'
-      path: '/reports'
-      fullPath: '/dashboard/cashier/reports'
-      preLoaderRoute: typeof DashboardCashierReportsRouteImport
-      parentRoute: typeof DashboardCashierRoute
-    }
-    '/dashboard/cashier/orders': {
-      id: '/dashboard/cashier/orders'
-      path: '/orders'
-      fullPath: '/dashboard/cashier/orders'
-      preLoaderRoute: typeof DashboardCashierOrdersRouteImport
       parentRoute: typeof DashboardCashierRoute
     }
     '/dashboard/cashier/checkout': {
@@ -855,20 +798,14 @@ const DashboardAdminRouteWithChildren = DashboardAdminRoute._addFileChildren(
 
 interface DashboardCashierRouteChildren {
   DashboardCashierCheckoutRoute: typeof DashboardCashierCheckoutRoute
-  DashboardCashierOrdersRoute: typeof DashboardCashierOrdersRoute
-  DashboardCashierReportsRoute: typeof DashboardCashierReportsRoute
   DashboardCashierSettingsRoute: typeof DashboardCashierSettingsRoute
-  DashboardCashierTablesRoute: typeof DashboardCashierTablesRoute
   DashboardCashierTransactionsRoute: typeof DashboardCashierTransactionsRoute
   DashboardCashierIndexRoute: typeof DashboardCashierIndexRoute
 }
 
 const DashboardCashierRouteChildren: DashboardCashierRouteChildren = {
   DashboardCashierCheckoutRoute: DashboardCashierCheckoutRoute,
-  DashboardCashierOrdersRoute: DashboardCashierOrdersRoute,
-  DashboardCashierReportsRoute: DashboardCashierReportsRoute,
   DashboardCashierSettingsRoute: DashboardCashierSettingsRoute,
-  DashboardCashierTablesRoute: DashboardCashierTablesRoute,
   DashboardCashierTransactionsRoute: DashboardCashierTransactionsRoute,
   DashboardCashierIndexRoute: DashboardCashierIndexRoute,
 }

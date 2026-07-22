@@ -7,12 +7,14 @@ import { fmt } from "@/lib/cart";
 import {
   DollarSign,
   Clock,
-  Users,
   CreditCard,
   TrendingUp,
   Loader2,
-  CheckCircle,
+  CheckCircle2,
   AlertCircle,
+  Banknote,
+  Smartphone,
+  History,
 } from "lucide-react";
 import { getActiveSessions, getTodayTransactions } from "@/lib/api";
 
@@ -43,29 +45,61 @@ function CashierOverview() {
     by_payment_method?: Record<string, number>;
   } || {};
 
-  const activeSessionsCount = sessions.length;
+  const pendingSessions = sessions.filter((s: any) => {
+    return parseFloat(s.total_bill || "0") > parseFloat(s.paid_amount || "0");
+  });
+
+  const totalPending = pendingSessions.reduce((sum: number, s: any) => {
+    return sum + (parseFloat(s.total_bill || "0") - parseFloat(s.paid_amount || "0"));
+  }, 0);
+
   const totalRevenue = parseFloat(summary?.total_amount || "0");
   const transactionCount = summary?.transaction_count || 0;
+
+  const methodIcons: Record<string, typeof CreditCard> = {
+    cash: Banknote,
+    card: CreditCard,
+    digital_wallet: Smartphone,
+    telebirr: Smartphone,
+    bank_transfer: Banknote,
+  };
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="font-serif text-3xl text-foreground">Cashier Overview</h1>
+        <h1 className="font-serif text-3xl text-foreground">Cashier Dashboard</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Monitor active sessions, revenue, and recent transactions
+          Today's payment overview and activity summary
         </p>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active Sessions</CardTitle>
+            <CardTitle className="text-sm font-medium">Pending Payments</CardTitle>
             <Clock className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{isErrorSessions ? "—" : isLoadingSessions ? "..." : activeSessionsCount}</div>
+            <div className="text-2xl font-bold text-amber-600">
+              {isErrorSessions ? "—" : isLoadingSessions ? "..." : pendingSessions.length}
+            </div>
             <p className="text-xs text-muted-foreground">
-              {isErrorSessions ? "Unavailable" : isLoadingSessions ? "Loading..." : activeSessionsCount > 0 ? "Sessions in progress" : "No active sessions"}
+              {isErrorSessions ? "Unavailable" : isLoadingSessions ? "Loading..." : `${fmt(totalPending)} pending`}
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Approved Today</CardTitle>
+            <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-emerald-600">
+              {isErrorTransactions ? "—" : isLoadingTransactions ? "..." : transactionCount}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {isErrorTransactions ? "Unavailable" : isLoadingTransactions ? "Loading..." : "Completed transactions"}
             </p>
           </CardContent>
         </Card>
@@ -76,35 +110,18 @@ function CashierOverview() {
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{fmt(totalRevenue)}</div>
+            <div className="text-2xl font-bold">
+              {isErrorTransactions ? "—" : isLoadingTransactions ? "..." : fmt(totalRevenue)}
+            </div>
             <p className="text-xs text-muted-foreground">
-              Total from {transactionCount} transactions
+              {isErrorTransactions ? "Unavailable" : isLoadingTransactions ? "Loading..." : `From ${transactionCount} transactions`}
             </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Payment Methods</CardTitle>
-            <CreditCard className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {Object.values(summary.by_payment_method || {}).reduce((a, b) => a + b, 0) || 0}
-            </div>
-            <div className="flex gap-2 mt-2 flex-wrap">
-              {Object.entries(summary.by_payment_method || {}).slice(0, 3).map(([method, amount]) => (
-                <Badge key={method} variant="outline" className="text-xs">
-                  {method.replace(/_/g, " ")}: {fmt(amount)}
-                </Badge>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Average Order</CardTitle>
+            <CardTitle className="text-sm font-medium">Avg. Transaction</CardTitle>
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -122,92 +139,103 @@ function CashierOverview() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Clock className="h-5 w-5" />
-              Active Orders
+              <History className="h-5 w-5" />
+              Today's Transactions
             </CardTitle>
             <CardDescription>
-              Currently active dining sessions
+              Most recent payment records
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {isErrorSessions ? (
-                <div className="flex flex-col items-center justify-center py-16">
-                  <AlertCircle className="h-12 w-12 text-destructive mb-4" />
-                  <p className="text-lg font-medium text-foreground">Failed to load</p>
-                </div>
-              ) : isLoadingSessions ? (
-                <div className="flex items-center justify-center py-8">
-                  <Loader2 className="h-8 w-8 animate-spin" />
-                </div>
-              ) : sessions.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  <CheckCircle className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                  <p>No active orders</p>
-                  <p className="text-sm">All tables are currently free</p>
-                </div>
-              ) : (
-                sessions.map((session) => (
-                  <div key={session.session_token} className="flex items-center justify-between p-4 border rounded-lg">
-                    <div className="flex items-center gap-3">
-                      <div className="rounded-full bg-accent/10 p-2">
-                        <Users className="h-4 w-4 text-accent" />
+            {isErrorTransactions ? (
+              <div className="flex flex-col items-center justify-center py-16">
+                <AlertCircle className="h-12 w-12 text-destructive mb-4" />
+                <p className="text-lg font-medium text-foreground">Failed to load</p>
+              </div>
+            ) : isLoadingTransactions ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="h-8 w-8 animate-spin" />
+              </div>
+            ) : transactions.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <History className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                <p>No transactions today</p>
+                <p className="text-sm">Payments will appear here once processed</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {transactions.slice(0, 10).map((tx: any) => {
+                  const Icon = methodIcons[tx.payment_method] || CreditCard;
+                  return (
+                    <div key={tx.id} className="flex items-center justify-between p-3 border rounded-lg">
+                      <div className="flex items-center gap-3">
+                        <Icon className="h-4 w-4 text-muted-foreground" />
+                        <div>
+                          <p className="text-sm font-medium">
+                            Table {tx.table_number || "N/A"} — {tx.customer_name || "Guest"}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {new Date(tx.created_at).toLocaleTimeString()}
+                            {" "}
+                            <span className="capitalize">({tx.payment_method?.replace(/_/g, " ")})</span>
+                          </p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="font-medium">{session.customer_name || "Guest"}</p>
-                        <p className="text-sm text-muted-foreground">Table: {session.table_number || "N/A"}</p>
-                      </div>
+                      <span className="text-sm font-semibold">{fmt(parseFloat(tx.amount || "0"))}</span>
                     </div>
-                    <Badge variant="secondary">Active</Badge>
-                  </div>
-                ))
-              )}
-            </div>
+                  );
+                })}
+              </div>
+            )}
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <TrendingUp className="h-5 w-5" />
-              Payment Summary
+              <CreditCard className="h-5 w-5" />
+              Payment Method Breakdown
             </CardTitle>
             <CardDescription>
-              Today's payment breakdown
+              Today's revenue by payment type
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {isErrorTransactions ? (
-                <div className="flex flex-col items-center justify-center py-16">
-                  <AlertCircle className="h-12 w-12 text-destructive mb-4" />
-                  <p className="text-lg font-medium text-foreground">Failed to load</p>
-                </div>
-              ) : Object.entries(summary.by_payment_method || {}).length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  <p>No payments recorded today</p>
-                </div>
-              ) : (
-                Object.entries(summary.by_payment_method || {}).map(([method, amount]) => {
+            {isErrorTransactions ? (
+              <div className="flex flex-col items-center justify-center py-16">
+                <AlertCircle className="h-12 w-12 text-destructive mb-4" />
+                <p className="text-lg font-medium text-foreground">Failed to load</p>
+              </div>
+            ) : Object.entries(summary.by_payment_method || {}).length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <p>No payments recorded today</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {Object.entries(summary.by_payment_method || {}).map(([method, amount]) => {
                   const total = Object.values(summary.by_payment_method || {}).reduce((a, b) => a + b, 0);
                   const percentage = (amount / total) * 100;
+                  const Icon = methodIcons[method] || CreditCard;
                   return (
-                    <div key={method} className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <CreditCard className="h-4 w-4" />
-                        <span className="text-sm capitalize">{method.replace(/_/g, " ")}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <div className="h-2 flex-1 rounded-full bg-muted overflow-hidden max-w-[120px]">
-                          <div className="h-full bg-accent transition-all" style={{ width: `${percentage}%` }} />
+                    <div key={method}>
+                      <div className="flex items-center justify-between text-sm mb-1">
+                        <div className="flex items-center gap-2">
+                          <Icon className="h-4 w-4 text-muted-foreground" />
+                          <span className="capitalize">{method.replace(/_/g, " ")}</span>
                         </div>
-                        <span className="text-sm font-medium w-20 text-right">{fmt(amount)}</span>
+                        <span className="text-sm font-medium">{fmt(amount)}</span>
+                      </div>
+                      <div className="h-2 rounded-full bg-muted overflow-hidden">
+                        <div
+                          className="h-full bg-accent transition-all"
+                          style={{ width: `${percentage}%` }}
+                        />
                       </div>
                     </div>
                   );
-                })
-              )}
-            </div>
+                })}
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>

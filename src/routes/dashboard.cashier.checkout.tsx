@@ -4,6 +4,7 @@ import { useAuthStore } from "@/lib/auth-store";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { fmt } from "@/lib/cart";
 import {
@@ -15,8 +16,10 @@ import {
   Receipt,
   AlertCircle,
   Clock,
+  Banknote,
+  Smartphone,
 } from "lucide-react";
-import { getActiveSessions, getSessionBill, approvePayment } from "@/lib/api";
+import { getActiveSessions, getSessionBill, approvePayment, recordPayment } from "@/lib/api";
 
 export const Route = createFileRoute("/dashboard/cashier/checkout")({
   component: CashierCheckout,
@@ -107,6 +110,8 @@ function CashierCheckout() {
   const [bill, setBill] = useState<any>(null);
   const [paymentResult, setPaymentResult] = useState<any>(null);
   const [step, setStep] = useState<"list" | "review" | "complete">("list");
+  const [tipAmount, setTipAmount] = useState("");
+  const [tab, setTab] = useState<"approvals" | "cash">("approvals");
 
   const { data: sessionsData, isLoading, isError: isErrorSessions } = useQuery({
     queryKey: ["cashier-active-sessions", user?.restaurant_id],
@@ -115,7 +120,7 @@ function CashierCheckout() {
   });
 
   const { data: billData, isLoading: billLoading } = useQuery({
-    queryKey: ["cashier-session-bill-approval", selectedSession?.session_token],
+    queryKey: ["cashier-session-bill", selectedSession?.session_token],
     queryFn: () => getSessionBill(selectedSession.session_token),
     enabled: !!selectedSession,
   });
@@ -134,15 +139,34 @@ function CashierCheckout() {
     },
   });
 
+  const recordMutation = useMutation({
+    mutationFn: (data: { session_token: string; amount: number; payment_method: string; tip_amount?: number }) =>
+      recordPayment(data),
+    onSuccess: (response) => {
+      queryClient.invalidateQueries({ queryKey: ["cashier-active-sessions"] });
+      queryClient.invalidateQueries({ queryKey: ["cashier-today-transactions"] });
+      setPaymentResult(response.data);
+      setStep("complete");
+      toast.success("Cash payment recorded!");
+    },
+    onError: (error: any) => {
+      toast.error(error?.message || "Failed to record payment");
+    },
+  });
+
   const sessions = (sessionsData?.data || []) as any[];
 
-  // Sessions that have unpaid non-cash orders needing approval
-  const pendingSessions = sessions.filter((s: any) => {
+  const approvalSessions = sessions.filter((s: any) => {
+    return parseFloat(s.total_bill || "0") > parseFloat(s.paid_amount || "0");
+  });
+
+  const cashSessions = sessions.filter((s: any) => {
     return parseFloat(s.total_bill || "0") > parseFloat(s.paid_amount || "0");
   });
 
   const handleSelectSession = async (session: any) => {
     setSelectedSession(session);
+    setTipAmount("");
     try {
       const response = await getSessionBill(session.session_token);
       if (response.success) {
@@ -159,20 +183,39 @@ function CashierCheckout() {
     approveMutation.mutate(selectedSession.session_token);
   };
 
-  const handleNewApproval = () => {
+  const handleRecordCash = () => {
+    if (!selectedSession || !bill) return;
+    const totalAmount = parseFloat(bill.bill.total_amount);
+    recordMutation.mutate({
+      session_token: selectedSession.session_token,
+      amount: totalAmount,
+      payment_method: "cash",
+      tip_amount: tipAmount ? parseFloat(tipAmount) : undefined,
+    });
+  };
+
+  const handleNew = () => {
     setStep("list");
     setSelectedSession(null);
     setBill(null);
     setPaymentResult(null);
+    setTipAmount("");
   };
 
   const handlePrintReceipt = () => {
     window.print();
   };
 
-  // Get the pending non-cash orders (submitted by customer)
+  const hasNonCashPending = bill?.orders?.some(
+    (o: any) => o.payment_method && o.payment_method !== "cash" && o.payment_status === "unpaid"
+  ) || false;
+
+  const hasCashPending = bill?.orders?.some(
+    (o: any) => o.payment_method === "cash" && o.payment_status === "unpaid"
+  ) || false;
+
   const pendingOrders = bill?.orders?.filter(
-    (o: any) => o.payment_method && o.payment_method !== 'cash' && o.payment_status === 'unpaid'
+    (o: any) => o.payment_method && o.payment_method !== "cash" && o.payment_status === "unpaid"
   ) || [];
 
   if (step === "complete" && paymentResult) {
@@ -180,8 +223,12 @@ function CashierCheckout() {
       <>
         <div className="space-y-6 no-print">
           <div>
-            <h1 className="font-serif text-3xl text-foreground">Payment Approved</h1>
-            <p className="mt-1 text-sm text-muted-foreground">Payment has been successfully approved</p>
+            <h1 className="font-serif text-3xl text-foreground">Payment Complete</h1>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {paymentResult.payment_method === "cash"
+                ? "Cash payment has been recorded"
+                : "Payment has been successfully approved"}
+            </p>
           </div>
 
           <Card className="text-center py-12">
@@ -202,6 +249,11 @@ function CashierCheckout() {
                     Ref: {paymentResult.transaction_id}
                   </p>
                 )}
+                {paymentResult.tip_amount && parseFloat(paymentResult.tip_amount) > 0 && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Tip: {fmt(parseFloat(paymentResult.tip_amount))}
+                  </p>
+                )}
               </div>
 
               {paymentResult.created_at && (
@@ -219,9 +271,9 @@ function CashierCheckout() {
                   <Printer className="h-4 w-4 mr-2" />
                   Print Receipt
                 </Button>
-                <Button onClick={handleNewApproval}>
+                <Button onClick={handleNew}>
                   <DollarSign className="h-4 w-4 mr-2" />
-                  New Approval
+                  New Payment
                 </Button>
               </div>
             </CardContent>
@@ -256,68 +308,147 @@ function CashierCheckout() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="font-serif text-3xl text-foreground">Payment Approvals</h1>
+        <h1 className="font-serif text-3xl text-foreground">Payment Verification</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Review and approve customer-submitted payments
+          Review payments and process cash transactions
         </p>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-5">
         <div className="lg:col-span-3">
           {step === "list" && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Clock className="h-5 w-5" />
+            <>
+              <div className="flex gap-2 mb-4">
+                <Button
+                  variant={tab === "approvals" ? "default" : "outline"}
+                  onClick={() => setTab("approvals")}
+                  className="flex items-center gap-2"
+                >
+                  <Smartphone className="h-4 w-4" />
                   Pending Approvals
-                </CardTitle>
-                <CardDescription>
-                  Sessions with non-cash payments awaiting verification
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {isErrorSessions ? (
-                  <div className="flex flex-col items-center justify-center py-16">
-                    <AlertCircle className="h-12 w-12 text-destructive mb-4" />
-                    <p className="text-lg font-medium text-foreground">Failed to load</p>
-                  </div>
-                ) : isLoading ? (
-                  <div className="flex items-center justify-center py-8">
-                    <Loader2 className="h-8 w-8 animate-spin" />
-                  </div>
-                ) : pendingSessions.length === 0 ? (
-                  <div className="text-center py-12 text-muted-foreground">
-                    <CheckCircle2 className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                    <p>No pending approvals</p>
-                    <p className="text-sm">All payments have been processed</p>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    {pendingSessions.map((session: any) => (
-                      <div
-                        key={session.session_token}
-                        className="flex items-center justify-between p-4 border rounded-lg cursor-pointer hover:bg-accent/5 transition-colors"
-                        onClick={() => handleSelectSession(session)}
-                      >
-                        <div>
-                          <p className="font-medium">Table {session.table_number}</p>
-                          <p className="text-sm text-muted-foreground">
-                            {session.customer_name || "Guest"}
-                          </p>
-                        </div>
-                        <div className="text-right">
-                          <p className="font-bold">{fmt(parseFloat(session.total_bill || "0"))}</p>
-                          <p className="text-xs text-amber-600 flex items-center gap-1 justify-end">
-                            <Clock className="h-3 w-3" />
-                            Awaiting approval
-                          </p>
-                        </div>
+                </Button>
+                <Button
+                  variant={tab === "cash" ? "default" : "outline"}
+                  onClick={() => setTab("cash")}
+                  className="flex items-center gap-2"
+                >
+                  <Banknote className="h-4 w-4" />
+                  Cash Payments
+                </Button>
+              </div>
+
+              {tab === "approvals" && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Clock className="h-5 w-5" />
+                      Pending Approvals
+                    </CardTitle>
+                    <CardDescription>
+                      Sessions with non-cash payments awaiting verification
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {isErrorSessions ? (
+                      <div className="flex flex-col items-center justify-center py-16">
+                        <AlertCircle className="h-12 w-12 text-destructive mb-4" />
+                        <p className="text-lg font-medium text-foreground">Failed to load</p>
                       </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+                    ) : isLoading ? (
+                      <div className="flex items-center justify-center py-8">
+                        <Loader2 className="h-8 w-8 animate-spin" />
+                      </div>
+                    ) : approvalSessions.length === 0 ? (
+                      <div className="text-center py-12 text-muted-foreground">
+                        <CheckCircle2 className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                        <p>No pending approvals</p>
+                        <p className="text-sm">All payments have been processed</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        {approvalSessions.map((session: any) => (
+                          <div
+                            key={session.session_token}
+                            className="flex items-center justify-between p-4 border rounded-lg cursor-pointer hover:bg-accent/5 transition-colors"
+                            onClick={() => handleSelectSession(session)}
+                          >
+                            <div>
+                              <p className="font-medium">Table {session.table_number}</p>
+                              <p className="text-sm text-muted-foreground">
+                                {session.customer_name || "Guest"}
+                              </p>
+                            </div>
+                            <div className="text-right">
+                              <p className="font-bold">{fmt(parseFloat(session.total_bill || "0"))}</p>
+                              <p className="text-xs text-amber-600 flex items-center gap-1 justify-end">
+                                <Clock className="h-3 w-3" />
+                                Awaiting approval
+                              </p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
+
+              {tab === "cash" && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Banknote className="h-5 w-5" />
+                      Cash Payments
+                    </CardTitle>
+                    <CardDescription>
+                      Sessions with cash payments to record
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {isErrorSessions ? (
+                      <div className="flex flex-col items-center justify-center py-16">
+                        <AlertCircle className="h-12 w-12 text-destructive mb-4" />
+                        <p className="text-lg font-medium text-foreground">Failed to load</p>
+                      </div>
+                    ) : isLoading ? (
+                      <div className="flex items-center justify-center py-8">
+                        <Loader2 className="h-8 w-8 animate-spin" />
+                      </div>
+                    ) : cashSessions.length === 0 ? (
+                      <div className="text-center py-12 text-muted-foreground">
+                        <Banknote className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                        <p>No cash payments pending</p>
+                        <p className="text-sm">All cash payments have been processed</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        {cashSessions.map((session: any) => (
+                          <div
+                            key={session.session_token}
+                            className="flex items-center justify-between p-4 border rounded-lg cursor-pointer hover:bg-accent/5 transition-colors"
+                            onClick={() => handleSelectSession(session)}
+                          >
+                            <div>
+                              <p className="font-medium">Table {session.table_number}</p>
+                              <p className="text-sm text-muted-foreground">
+                                {session.customer_name || "Guest"}
+                              </p>
+                            </div>
+                            <div className="text-right">
+                              <p className="font-bold">{fmt(parseFloat(session.total_bill || "0"))}</p>
+                              <p className="text-xs text-emerald-600 flex items-center gap-1 justify-end">
+                                <Banknote className="h-3 w-3" />
+                                Cash
+                              </p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
+            </>
           )}
 
           {step === "review" && bill && (
@@ -325,20 +456,15 @@ function CashierCheckout() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Receipt className="h-5 w-5" />
-                  Review Payment
+                  {hasNonCashPending ? "Review Payment" : "Record Cash Payment"}
                 </CardTitle>
                 <CardDescription>
                   Table {bill.session.table_number} — {bill.session.customer_name}
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
-                {pendingOrders.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <p>No pending non-cash payments for this session.</p>
-                  </div>
-                ) : (
+                {hasNonCashPending && (
                   <>
-                    {/* Customer's submitted payment details */}
                     {pendingOrders.map((order: any) => (
                       <div key={order.id} className="rounded-lg border border-amber-200 bg-amber-50 p-5">
                         <div className="flex items-center gap-2 mb-3">
@@ -354,12 +480,12 @@ function CashierCheckout() {
 
                             <span className="text-amber-600">Payment Method</span>
                             <span className="font-semibold text-amber-900 text-right capitalize">
-                              {order.payment_method === 'telebirr' ? 'Digital Wallet' : order.payment_method?.replace(/_/g, ' ')}
+                              {order.payment_method === "telebirr" ? "Digital Wallet" : order.payment_method?.replace(/_/g, " ")}
                             </span>
 
                             {order.payment_account && (
                               <>
-                                {order.payment_method === 'telebirr' ? (
+                                {order.payment_method === "telebirr" ? (
                                   <>
                                     <span className="text-amber-600">Wallet</span>
                                     <span className="font-semibold text-amber-900 text-right">{order.payment_account.type}</span>
@@ -395,48 +521,108 @@ function CashierCheckout() {
                       </div>
                     ))}
 
-                    {/* Bill summary */}
-                    <div className="rounded-lg bg-accent/5 p-4 space-y-2">
-                      <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">Subtotal</span>
-                        <span>{fmt(parseFloat(bill.bill.subtotal))}</span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">Tax</span>
-                        <span>{fmt(parseFloat(bill.bill.tax_amount))}</span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">Service Charge</span>
-                        <span>{fmt(parseFloat(bill.bill.service_charge))}</span>
-                      </div>
-                      <div className="flex justify-between font-bold text-lg border-t pt-2 mt-2">
-                        <span>Total</span>
-                        <span>{fmt(parseFloat(bill.bill.total_amount))}</span>
-                      </div>
+                    <div className="flex gap-2 pt-2">
+                      <Button
+                        onClick={handleApprove}
+                        disabled={approveMutation.isPending}
+                        className="flex-1 bg-emerald-600 hover:bg-emerald-700"
+                      >
+                        {approveMutation.isPending ? (
+                          <>
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            Approving...
+                          </>
+                        ) : (
+                          <>
+                            <CheckCircle2 className="h-4 w-4 mr-2" />
+                            Approve Payment
+                          </>
+                        )}
+                      </Button>
                     </div>
                   </>
                 )}
 
+                {hasCashPending && (
+                  <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-5">
+                    <div className="flex items-center gap-2 mb-3">
+                      <Banknote className="h-5 w-5 text-emerald-600" />
+                      <h3 className="font-semibold text-emerald-800 text-sm">
+                        Record Cash Payment
+                      </h3>
+                    </div>
+                    <div className="border-t border-emerald-200 pt-3 space-y-4">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-emerald-600">Total Amount Due</span>
+                        <span className="font-bold text-emerald-900">{fmt(parseFloat(bill.bill.total_amount))}</span>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-emerald-700 mb-1.5">
+                          Tip Amount (optional)
+                        </label>
+                        <Input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={tipAmount}
+                          onChange={(e) => setTipAmount(e.target.value)}
+                          placeholder="0.00"
+                          className="border-emerald-300 focus:border-emerald-500"
+                        />
+                      </div>
+
+                      <div className="flex justify-between text-sm font-medium">
+                        <span className="text-emerald-700">Total to Collect</span>
+                        <span className="font-bold text-emerald-900">
+                          {fmt(parseFloat(bill.bill.total_amount) + (tipAmount ? parseFloat(tipAmount) : 0))}
+                        </span>
+                      </div>
+
+                      <Button
+                        onClick={handleRecordCash}
+                        disabled={recordMutation.isPending}
+                        className="w-full bg-emerald-600 hover:bg-emerald-700"
+                      >
+                        {recordMutation.isPending ? (
+                          <>
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            Recording...
+                          </>
+                        ) : (
+                          <>
+                            <Banknote className="h-4 w-4 mr-2" />
+                            Record Cash Payment
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Bill summary */}
+                <div className="rounded-lg bg-accent/5 p-4 space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Subtotal</span>
+                    <span>{fmt(parseFloat(bill.bill.subtotal))}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Tax</span>
+                    <span>{fmt(parseFloat(bill.bill.tax_amount))}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Service Charge</span>
+                    <span>{fmt(parseFloat(bill.bill.service_charge))}</span>
+                  </div>
+                  <div className="flex justify-between font-bold text-lg border-t pt-2 mt-2">
+                    <span>Total</span>
+                    <span>{fmt(parseFloat(bill.bill.total_amount))}</span>
+                  </div>
+                </div>
+
                 <div className="flex gap-3">
                   <Button variant="outline" onClick={() => setStep("list")} className="flex-1">
                     Back
-                  </Button>
-                  <Button
-                    onClick={handleApprove}
-                    disabled={approveMutation.isPending || pendingOrders.length === 0}
-                    className="flex-1 bg-emerald-600 hover:bg-emerald-700"
-                  >
-                    {approveMutation.isPending ? (
-                      <>
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        Approving...
-                      </>
-                    ) : (
-                      <>
-                        <CheckCircle2 className="h-4 w-4 mr-2" />
-                        Approve Payment
-                      </>
-                    )}
                   </Button>
                 </div>
               </CardContent>
