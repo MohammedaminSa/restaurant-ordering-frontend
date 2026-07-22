@@ -8,8 +8,6 @@ import {
   getCategories,
   serveOrder,
   createWaiterOrder,
-  completeSession,
-  type PlacedOrder,
   type WaiterTable,
   type MenuItem,
   type Category,
@@ -29,23 +27,18 @@ import {
   Bell,
   ShoppingCart,
   Send,
-  Clock,
   Users,
   Table as TableIcon,
-  ChevronRight,
   User,
   AlertCircle,
   Smartphone,
   Building2,
   Banknote,
-  Wallet,
-  Landmark,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 
 export const Route = createFileRoute("/dashboard/waiter/orders")({
@@ -55,7 +48,6 @@ export const Route = createFileRoute("/dashboard/waiter/orders")({
 function WaiterOrders() {
   const user = useAuthStore((s) => s.user);
   const queryClient = useQueryClient();
-  const [statusFilter, setStatusFilter] = useState("all");
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [cart, setCart] = useState<{ menu_item_id: string; name: string; price: number; quantity: number }[]>([]);
@@ -99,15 +91,8 @@ function WaiterOrders() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["waiter-orders"] });
       queryClient.invalidateQueries({ queryKey: ["waiter-tables"] });
-      toast.success("Order sent to kitchen");
-      setShowCreateModal(false);
-      setCart([]);
-      setSelectedTable(null);
-      setCustomerName("");
-      setCustomerPhone("");
-      setSelectedPaymentMethod('cash');
-      setTransactionId('');
-      setOrderNotes("");
+      toast.success("Order placed — pending payment verification");
+      handleCloseModal();
     },
     onError: (err: any) => toast.error(err.message || "Failed to create order"),
   });
@@ -121,41 +106,18 @@ function WaiterOrders() {
     onError: (err: any) => toast.error(err.message || "Failed to serve order"),
   });
 
-  const closeTableMutation = useMutation({
-    mutationFn: (sessionToken: string) => completeSession(sessionToken),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["waiter-tables"] });
-      queryClient.invalidateQueries({ queryKey: ["waiter-orders"] });
-      toast.success("Table closed and session completed");
-    },
-    onError: (err: any) => toast.error(err.message || "Failed to close table"),
-  });
-
-  const [confirmCloseTable, setConfirmCloseTable] = useState<WaiterTable | null>(null);
-
   const tables = (tablesQuery.data?.data || []) as WaiterTable[];
   const orders = (ordersQuery.data?.data || []) as any[];
   const categories = (categoriesQuery.data?.data || []) as Category[];
   const menuItems = (menuItemsQuery.data?.data || []) as MenuItem[];
 
+  const readyOrders = orders
+    .filter((o) => o.status === "ready")
+    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
   const availableTables = tables.filter((t) => t.status !== 'maintenance');
 
-  const filteredOrders = statusFilter === "all"
-    ? orders
-    : orders.filter((o) => o.status === statusFilter);
-
-  const sortedOrders = [...filteredOrders].sort(
-    (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-  );
-
   const getTableForOrder = (order: any) => tables.find((t) => t.session_token === order.session_token);
-
-  const statusStyles: Record<string, { color: string; bg: string; icon: typeof ClipboardList }> = {
-    pending: { color: "text-amber-600 dark:text-amber-400", bg: "bg-amber-50 dark:bg-amber-950/30", icon: Clock },
-    preparing: { color: "text-orange-600 dark:text-orange-400", bg: "bg-orange-50 dark:bg-orange-950/30", icon: Utensils },
-    ready: { color: "text-emerald-600 dark:text-emerald-400", bg: "bg-emerald-50 dark:bg-emerald-950/30", icon: Bell },
-    served: { color: "text-blue-600 dark:text-blue-400", bg: "bg-blue-50 dark:bg-blue-950/30", icon: CheckCircle2 },
-  };
 
   const filteredCategories = categories.filter((c) => c.is_active !== false);
   const filteredMenuItems = menuItems
@@ -175,7 +137,6 @@ function WaiterOrders() {
   };
 
   const cartTotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
-  const readyCount = orders.filter((o: any) => o.status === "ready").length;
 
   const getTimeAgo = (d: string) => {
     const m = Math.floor((Date.now() - new Date(d).getTime()) / 60000);
@@ -187,8 +148,6 @@ function WaiterOrders() {
   const handleCreateOrder = () => {
     if (!selectedTable) return toast.error("Please select a table");
     if (cart.length === 0) return toast.error("Please add at least one item");
-
-    // If table has no active session, require customer name
     if (!selectedTable.session_token && !customerName.trim()) {
       return toast.error("Please enter the customer's name");
     }
@@ -219,15 +178,12 @@ function WaiterOrders() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="font-serif text-3xl text-foreground">Orders</h1>
-          <p className="text-sm text-muted-foreground mt-1">{orders.length} total · {readyCount} ready to serve</p>
+          <h1 className="font-serif text-3xl text-foreground">Ready Orders</h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            {readyOrders.length} order{readyOrders.length !== 1 ? "s" : ""} ready to serve
+          </p>
         </div>
         <div className="flex items-center gap-2">
-          {readyCount > 0 && (
-            <div className="flex items-center gap-2 rounded-lg bg-emerald-50 dark:bg-emerald-950/30 px-3 py-2 text-sm font-medium text-emerald-700 dark:text-emerald-400 animate-pulse">
-              <Bell className="h-4 w-4" />{readyCount} ready
-            </div>
-          )}
           <Button variant="outline" size="sm" onClick={() => { queryClient.invalidateQueries({ queryKey: ["waiter-orders"] }); queryClient.invalidateQueries({ queryKey: ["waiter-tables"] }); }}>
             <RefreshCw className="h-4 w-4 mr-1" />Refresh
           </Button>
@@ -237,47 +193,9 @@ function WaiterOrders() {
         </div>
       </div>
 
-      {tables.filter(t => t.session_token).length > 0 && (
-        <div className="rounded-xl border border-border bg-card p-4">
-          <div className="flex items-center gap-2 mb-3">
-            <Users className="h-4 w-4 text-muted-foreground" />
-            <h2 className="text-sm font-semibold text-foreground">Active Tables</h2>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {tables.filter(t => t.session_token).map((t) => (
-              <div key={t.id} className="flex items-center gap-2 rounded-lg border border-border bg-background px-3 py-2 text-sm">
-                <TableIcon className="h-4 w-4 text-muted-foreground" />
-                <span className="font-medium text-foreground">{t.table_number}</span>
-                <span className="text-xs text-muted-foreground">· {t.customer_name || "Guest"}</span>
-                <button
-                  onClick={() => setConfirmCloseTable(t)}
-                  disabled={closeTableMutation.isPending}
-                  className="ml-1 rounded-md px-2 py-1 text-xs font-medium text-red-600 hover:bg-red-50 disabled:opacity-50"
-                >
-                  Close
-                </button>
-              </div>
-            ))}
-          </div>
-        </div>
+      {ordersQuery.isLoading && (
+        <div className="flex justify-center py-16"><Loader2 className="h-10 w-10 animate-spin text-accent" /></div>
       )}
-
-      <div className="flex gap-1 flex-wrap">
-        {["all", "pending", "preparing", "ready", "served"].map((f) => (
-          <button
-            key={f}
-            onClick={() => setStatusFilter(f)}
-            className={`rounded-full px-4 py-1.5 text-xs font-medium transition-colors flex items-center gap-1 ${
-              statusFilter === f ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
-            }`}
-          >
-            {f.charAt(0).toUpperCase() + f.slice(1)}
-            <span className="text-[10px] opacity-70">{orders.filter((o: any) => f === "all" || o.status === f).length}</span>
-          </button>
-        ))}
-      </div>
-
-      {ordersQuery.isLoading && <div className="flex justify-center py-16"><Loader2 className="h-10 w-10 animate-spin text-accent" /></div>}
 
       {ordersQuery.isError && (
         <div className="flex justify-center py-16">
@@ -289,28 +207,26 @@ function WaiterOrders() {
         </div>
       )}
 
-      {!ordersQuery.isLoading && sortedOrders.length === 0 && (
+      {!ordersQuery.isLoading && readyOrders.length === 0 && (
         <div className="rounded-xl border border-border bg-card py-16 text-center">
-          <ClipboardList className="h-12 w-12 mx-auto mb-3 text-muted-foreground/40" />
-          <p className="font-serif text-xl text-foreground mb-1">No orders</p>
-          <p className="text-sm text-muted-foreground mb-4">Create your first order</p>
+          <CheckCircle2 className="h-12 w-12 mx-auto mb-3 text-muted-foreground/40" />
+          <p className="font-serif text-xl text-foreground mb-1">No ready orders</p>
+          <p className="text-sm text-muted-foreground mb-4">Orders from the kitchen will appear here</p>
           <Button onClick={() => setShowCreateModal(true)}><Plus className="h-4 w-4 mr-1" />New Order</Button>
         </div>
       )}
 
-      {!ordersQuery.isLoading && sortedOrders.length > 0 && (
+      {!ordersQuery.isLoading && readyOrders.length > 0 && (
         <div className="space-y-3">
-          {sortedOrders.map((order: any) => {
+          {readyOrders.map((order: any) => {
             const table = getTableForOrder(order);
-            const style = statusStyles[order.status] || statusStyles.pending;
-            const StatusIcon = style.icon;
             return (
-              <Card key={order.id} className={`transition-all hover:shadow-sm ${order.status === "ready" ? "ring-2 ring-emerald-400" : ""}`}>
+              <Card key={order.id} className="ring-2 ring-emerald-400 transition-all hover:shadow-sm">
                 <CardContent className="p-5">
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex items-center gap-3">
-                      <div className={`rounded-lg ${style.bg} p-2`}>
-                        <StatusIcon className={`h-5 w-5 ${style.color}`} />
+                      <div className="rounded-lg bg-emerald-50 dark:bg-emerald-950/30 p-2">
+                        <Bell className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
                       </div>
                       <div>
                         <div className="flex items-center gap-2">
@@ -318,9 +234,8 @@ function WaiterOrders() {
                           {table && <Badge variant="secondary" className="text-xs">Table {table.table_number}</Badge>}
                           {table?.customer_name && <span className="text-xs text-muted-foreground">{table.customer_name}</span>}
                         </div>
-                        <span className={`inline-flex items-center gap-1 text-xs font-medium capitalize ${style.color}`}>
-                          <span className={`h-1.5 w-1.5 rounded-full ${order.status === "pending" ? "bg-amber-500" : order.status === "preparing" ? "bg-orange-500" : order.status === "ready" ? "bg-emerald-500" : "bg-blue-500"}`} />
-                          {order.status} · {getTimeAgo(order.created_at)}
+                        <span className="text-xs text-muted-foreground">
+                          Ready · {getTimeAgo(order.created_at)}
                         </span>
                       </div>
                     </div>
@@ -334,13 +249,22 @@ function WaiterOrders() {
                       </span>
                     ))}
                   </div>
-                  {order.special_instructions && <p className="mt-2 text-xs text-muted-foreground italic">Note: {order.special_instructions}</p>}
-                  {order.status === "ready" && (
-                    <Button onClick={() => serveMutation.mutate(order.id)} disabled={serveMutation.isPending} className="mt-3" size="sm">
-                      {serveMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <CheckCircle2 className="h-4 w-4 mr-1" />}
-                      Mark as Served
-                    </Button>
+                  {order.special_instructions && (
+                    <p className="mt-2 text-xs text-muted-foreground italic">Note: {order.special_instructions}</p>
                   )}
+                  <Button
+                    onClick={() => serveMutation.mutate(order.id)}
+                    disabled={serveMutation.isPending}
+                    className="mt-3"
+                    size="sm"
+                  >
+                    {serveMutation.isPending ? (
+                      <Loader2 className="h-4 w-4 animate-spin mr-1" />
+                    ) : (
+                      <CheckCircle2 className="h-4 w-4 mr-1" />
+                    )}
+                    Mark as Served
+                  </Button>
                 </CardContent>
               </Card>
             );
@@ -545,41 +469,12 @@ function WaiterOrders() {
 
             <div className="border-t border-border px-6 py-4 flex items-center justify-end gap-2">
               <Button variant="outline" onClick={handleCloseModal}>Cancel</Button>
-              <Button onClick={handleCreateOrder} disabled={createOrderMutation.isPending || cart.length === 0 || !selectedTable || (!selectedTable.session_token && !customerName.trim()) || (selectedPaymentMethod !== 'cash' && !transactionId.trim())}>
-                {createOrderMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Send className="h-4 w-4 mr-1" />}
-                Send to Kitchen
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {confirmCloseTable && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setConfirmCloseTable(null)}>
-          <div className="w-full max-w-md rounded-xl border border-border bg-card p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
-            <h2 className="font-serif text-xl text-foreground mb-2">Close Table {confirmCloseTable.table_number}?</h2>
-            <p className="text-sm text-muted-foreground mb-1">
-              Customer: <span className="font-medium text-foreground">{confirmCloseTable.customer_name || "Guest"}</span>
-            </p>
-            <p className="text-sm text-muted-foreground mb-4">
-              This will mark the session as completed and free the table for the next customer.
-            </p>
-            <div className="flex gap-3">
-              <Button variant="outline" onClick={() => setConfirmCloseTable(null)} className="flex-1">Cancel</Button>
               <Button
-                onClick={() => {
-                  closeTableMutation.mutate(confirmCloseTable.session_token!, {
-                    onSuccess: () => setConfirmCloseTable(null),
-                  });
-                }}
-                disabled={closeTableMutation.isPending}
-                className="flex-1 bg-red-600 hover:bg-red-700 text-white"
+                onClick={handleCreateOrder}
+                disabled={createOrderMutation.isPending || cart.length === 0 || !selectedTable || (!selectedTable.session_token && !customerName.trim()) || (selectedPaymentMethod !== 'cash' && !transactionId.trim())}
               >
-                {closeTableMutation.isPending ? (
-                  <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Closing...</>
-                ) : (
-                  "Close Table"
-                )}
+                {createOrderMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Send className="h-4 w-4 mr-1" />}
+                Place Order
               </Button>
             </div>
           </div>
