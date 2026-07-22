@@ -1,9 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useAuthStore } from "@/lib/auth-store";
-import { getMyRestaurant, updateMyRestaurant, type PaymentDetails, type WalletConfig, type BankConfig } from "@/lib/api";
+import { getMyRestaurant, updateMyRestaurant, type PaymentDetails, type WalletConfig, type BankConfig, type HeroSettings } from "@/lib/api";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Smartphone, Building2, Plus, Trash2, Save, Loader2 } from "lucide-react";
+import { Smartphone, Building2, Image, Plus, Trash2, Save, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { useState, useEffect } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
@@ -56,19 +56,31 @@ function Customization() {
 
   const restaurant = restaurantData?.data;
   const paymentDetails = restaurant?.payment_details;
+  const settings = restaurant?.settings || {};
+  const heroSettings = settings?.hero as HeroSettings | undefined;
 
   const [wallets, setWallets] = useState<WalletConfig[]>([]);
   const [banks, setBanks] = useState<BankConfig[]>([]);
+  const [hero, setHero] = useState<HeroSettings>({
+    tagline: '',
+    heading: '',
+    subtitle: '',
+    background_image: '',
+  });
 
   useEffect(() => {
     if (paymentDetails) {
       setWallets(paymentDetails.wallets || []);
       setBanks(paymentDetails.banks || []);
     }
-  }, [paymentDetails]);
+    if (heroSettings) {
+      setHero(heroSettings);
+    }
+  }, [paymentDetails, heroSettings]);
 
   const saveMutation = useMutation({
-    mutationFn: (data: PaymentDetails) => updateMyRestaurant({ payment_details: data }),
+    mutationFn: (data: { payment_details: PaymentDetails; settings: Record<string, any> }) =>
+      updateMyRestaurant(data),
     onSuccess: () => {
       toast.success('Settings saved successfully');
     },
@@ -76,7 +88,10 @@ function Customization() {
   });
 
   const handleSave = () => {
-    saveMutation.mutate({ wallets, banks });
+    saveMutation.mutate({
+      payment_details: { wallets, banks },
+      settings: { ...settings, hero },
+    });
   };
 
   const addWallet = () => {
@@ -265,6 +280,61 @@ function Customization() {
               </div>
             </div>
           ))}
+        </CardContent>
+      </Card>
+
+      {/* Hero Section */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Image className="h-5 w-5" />
+            Hero Section
+          </CardTitle>
+          <CardDescription>
+            Customize the landing page hero banner shown to customers
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div>
+            <label className="block text-xs font-medium text-foreground mb-1">Tagline</label>
+            <input
+              type="text"
+              value={hero.tagline || ''}
+              onChange={(e) => setHero({ ...hero, tagline: e.target.value })}
+              placeholder="Est. 2018 · Mediterranean"
+              className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder-muted-foreground/60 focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-foreground mb-1">Heading</label>
+            <input
+              type="text"
+              value={hero.heading || ''}
+              onChange={(e) => setHero({ ...hero, heading: e.target.value })}
+              placeholder="A seasonal menu, made to order."
+              className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder-muted-foreground/60 focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-foreground mb-1">Subtitle</label>
+            <textarea
+              value={hero.subtitle || ''}
+              onChange={(e) => setHero({ ...hero, subtitle: e.target.value })}
+              placeholder="Browse tonight's dishes, tap through the details, and send your order straight to our kitchen."
+              rows={3}
+              className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder-muted-foreground/60 focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-foreground mb-1">Background Image URL</label>
+            <input
+              type="text"
+              value={hero.background_image || ''}
+              onChange={(e) => setHero({ ...hero, background_image: e.target.value })}
+              placeholder="https://example.com/hero-image.jpg"
+              className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder-muted-foreground/60 focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring"
+            />
+          </div>
         </CardContent>
       </Card>
 

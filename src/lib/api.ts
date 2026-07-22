@@ -927,6 +927,7 @@ export interface Restaurant {
   admin_count?: number;
   total_staff?: number;
   payment_details?: PaymentDetails;
+  settings?: Record<string, any>;
 }
 
 export interface CreateRestaurantRequest {
@@ -986,7 +987,12 @@ export const getMyRestaurant = async (): Promise<ApiResponse<Restaurant>> => {
 /**
  * Update own restaurant settings (restaurant_admin)
  */
-export const updateMyRestaurant = async (data: { payment_details: PaymentDetails }): Promise<ApiResponse<Restaurant>> => {
+export const updateMyRestaurant = async (data: {
+  payment_details?: PaymentDetails;
+  description?: string;
+  logo_url?: string;
+  settings?: Record<string, any>;
+}): Promise<ApiResponse<Restaurant>> => {
   const response = await api.patch('/restaurants/my', data);
   return response.data;
 };
@@ -1046,6 +1052,13 @@ export const updateUserPassword = async (userId: string, newPassword: string, cu
   return response.data;
 };
 
+export interface HeroSettings {
+  tagline?: string;
+  heading?: string;
+  subtitle?: string;
+  background_image?: string;
+}
+
 export interface RestaurantInfo {
   id: string;
   name: string;
@@ -1055,6 +1068,7 @@ export interface RestaurantInfo {
   currency: string;
   tax_rate: number;
   service_charge_rate: number;
+  settings?: Record<string, any>;
 }
 
 export const getRestaurantInfo = async (): Promise<ApiResponse<RestaurantInfo>> => {

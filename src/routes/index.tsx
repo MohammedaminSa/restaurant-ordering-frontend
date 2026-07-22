@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
-import { getCategories, getMenuItems, getRestaurantInfo, type Category, type MenuItem } from "@/lib/api";
+import { getCategories, getMenuItems, getRestaurantInfo, type Category, type MenuItem, type HeroSettings } from "@/lib/api";
 import { SiteHeader } from "@/components/site-header";
 import { useCart, fmt } from "@/lib/cart";
 import { toast } from "sonner";
@@ -37,6 +37,7 @@ function Menu() {
   const shown = active ? menuItems.filter((i) => i.category_id === active) : menuItems;
   const restaurantName = restaurant?.data?.name || 'Restaurant';
   const currency = restaurant?.data?.currency;
+  const heroSettings = (restaurant?.data as any)?.settings?.hero as HeroSettings | undefined;
 
   const handleAddToCart = (item: MenuItem) => {
     // Simply add to cart - no need to check session here
@@ -60,16 +61,18 @@ function Menu() {
       )}
 
       <section className="relative overflow-hidden border-b border-border/60">
-        <img src={heroImg} alt={`${restaurantName} dining room`} width={1600} height={1024}
+        <img src={heroSettings?.background_image || heroImg} alt={`${restaurantName} dining room`} width={1600} height={1024}
           className="absolute inset-0 h-full w-full object-cover opacity-60" />
         <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
         <div className="relative mx-auto max-w-6xl px-4 py-16 sm:py-24 md:py-32">
-          <p className="text-xs uppercase tracking-[0.3em] text-accent">Est. 2018 · Mediterranean</p>
+          {heroSettings?.tagline && (
+            <p className="text-xs uppercase tracking-[0.3em] text-accent">{heroSettings.tagline}</p>
+          )}
           <h1 className="mt-4 max-w-2xl font-serif text-3xl sm:text-5xl leading-tight text-foreground md:text-6xl">
-            A seasonal menu, made to order.
+            {heroSettings?.heading || 'A seasonal menu, made to order.'}
           </h1>
           <p className="mt-4 max-w-xl text-sm sm:text-base text-muted-foreground md:text-lg">
-            Browse tonight's dishes, tap through the details, and send your order straight to our kitchen.
+            {heroSettings?.subtitle || "Browse tonight's dishes, tap through the details, and send your order straight to our kitchen."}
           </p>
           <a href="#menu" className="mt-6 sm:mt-8 inline-flex items-center rounded-full bg-primary px-5 sm:px-6 py-2.5 sm:py-3 text-sm font-medium text-primary-foreground transition-transform hover:scale-[1.03]">
             View the menu
