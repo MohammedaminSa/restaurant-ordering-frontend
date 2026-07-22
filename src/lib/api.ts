@@ -601,18 +601,44 @@ export const recordPayment = async (data: PaymentRequest): Promise<ApiResponse<P
 };
 
 /**
- * Approve pending payment (Protected - cashier)
+ * Get all pending (awaiting_payment) orders (Protected - cashier)
  */
-export const approvePayment = async (sessionToken: string): Promise<ApiResponse<PaymentResponse>> => {
-  const response = await api.post('/cashier/payments/approve', { session_token: sessionToken });
+export const getPendingPayments = async (restaurantId?: string): Promise<ApiResponse<any[]>> => {
+  const params = restaurantId ? { restaurantId } : {};
+  const response = await api.get('/cashier/payments/pending', { params });
   return response.data;
 };
 
 /**
- * Reject pending payment (Protected - cashier)
+ * Get all rejected payments (Protected - cashier)
  */
-export const rejectPayment = async (sessionToken: string): Promise<ApiResponse<null>> => {
-  const response = await api.post('/cashier/payments/reject', { session_token: sessionToken });
+export const getRejectedPayments = async (restaurantId?: string): Promise<ApiResponse<any[]>> => {
+  const params = restaurantId ? { restaurantId } : {};
+  const response = await api.get('/cashier/payments/rejected', { params });
+  return response.data;
+};
+
+/**
+ * Approve a single pending order (Protected - cashier)
+ */
+export const approvePayment = async (orderId: string): Promise<ApiResponse<PaymentResponse>> => {
+  const response = await api.post('/cashier/payments/approve', { order_id: orderId });
+  return response.data;
+};
+
+/**
+ * Reject a single pending order (Protected - cashier)
+ */
+export const rejectPayment = async (orderId: string): Promise<ApiResponse<null>> => {
+  const response = await api.post('/cashier/payments/reject', { order_id: orderId });
+  return response.data;
+};
+
+/**
+ * Delete (cancel) a rejected payment (Protected - cashier)
+ */
+export const deleteRejectedPayment = async (orderId: string): Promise<ApiResponse<null>> => {
+  const response = await api.delete(`/cashier/payments/rejected/${orderId}`);
   return response.data;
 };
 
