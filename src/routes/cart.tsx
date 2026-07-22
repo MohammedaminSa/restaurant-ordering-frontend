@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useCart, fmt } from "@/lib/cart";
-import { placeOrder, createSession, getSessionByToken, getSessionNotifications, type PaymentDetails } from "@/lib/api";
+import { placeOrder, createSession, getSessionByToken, getSessionOrders, getSessionNotifications, type PaymentDetails } from "@/lib/api";
 import { toast } from "sonner";
 import { ShoppingBag, ArrowLeft, CheckCircle, Loader2, MapPin, User, Table as TableIcon, Trash2, Plus, Minus, Smartphone, Building2, Banknote, Wallet, Landmark, XCircle, Timer } from "lucide-react";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
@@ -19,6 +19,8 @@ function CartPage() {
   const [submitting, setSubmitting] = useState(false);
   const [orderInstructions, setOrderInstructions] = useState("");
   const [orderNumber, setOrderNumber] = useState<number | null>(null);
+  const [orderId, setOrderId] = useState<string | null>(null);
+  const [orderCreatedAt, setOrderCreatedAt] = useState<string | null>(null);
   const [pendingTableInfo, setPendingTableInfo] = useState<any>(null);
   const [paymentDetails, setPaymentDetails] = useState<PaymentDetails | null>(null);
   const [fetchingSession, setFetchingSession] = useState(false);
@@ -34,7 +36,15 @@ function CartPage() {
   const sessionToken = localStorage.getItem("sessionToken");
   const sessionDataStr = localStorage.getItem("sessionData");
 
-  // Poll notifications during confirmation step
+  // Poll orders during confirmation step — if the current order appears, it's been approved
+  const { data: ordersData } = useQuery({
+    queryKey: ["cart-orders", sessionToken],
+    queryFn: () => getSessionOrders(sessionToken!),
+    enabled: !!sessionToken && step === 'confirmation',
+    refetchInterval: 5000,
+  });
+
+  // Poll notifications for rejection status
   const { data: notifData } = useQuery({
     queryKey: ["cart-notifications", sessionToken],
     queryFn: () => getSessionNotifications(sessionToken!),
@@ -188,6 +198,8 @@ function CartPage() {
 
       setStep('confirmation');
       setOrderNumber(response.data.order_number);
+      setOrderId(response.data.id);
+      setOrderCreatedAt(response.data.created_at);
       localStorage.setItem("pendingOrder", "true");
       clear();
       setOrderInstructions("");
@@ -253,9 +265,18 @@ function CartPage() {
   // STEP 3: CONFIRMATION
   // =========================================================
   if (step === 'confirmation') {
+    const confirmedOrders = ordersData?.data || [];
     const notifications = notifData?.data || [];
-    const paymentApproved = notifications.some((n: any) => n.type === 'payment_approved');
-    const paymentRejected = notifications.some((n: any) => n.type === 'payment_rejected');
+
+    // Payment is approved when our specific order appears in getSessionOrders
+    const paymentApproved = orderId
+      ? confirmedOrders.some((o: any) => o.id === orderId)
+      : confirmedOrders.length > 0;
+
+    // Payment is rejected when a rejection notification exists AFTER our order was placed
+    const paymentRejected = orderCreatedAt
+      ? notifications.some((n: any) => n.type === 'payment_rejected' && new Date(n.created_at) > new Date(orderCreatedAt))
+      : notifications.some((n: any) => n.type === 'payment_rejected');
 
     if (paymentApproved) {
       return (
