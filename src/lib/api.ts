@@ -1084,4 +1084,16 @@ export const getRestaurantInfo = async (): Promise<ApiResponse<RestaurantInfo>> 
   return response.data;
 };
 
+/**
+ * Upload an image file (Protected - admin)
+ */
+export const uploadImage = async (file: File): Promise<ApiResponse<{ url: string; filename: string }>> => {
+  const formData = new FormData();
+  formData.append('image', file);
+  const response = await api.post('/upload', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+  return response.data;
+};
+
 export default api;

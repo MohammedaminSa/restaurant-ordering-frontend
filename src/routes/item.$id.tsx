@@ -4,9 +4,8 @@ import { getMenuItemById, getRestaurantInfo } from "@/lib/api";
 import { SiteHeader } from "@/components/site-header";
 import { useCart, fmt } from "@/lib/cart";
 import { toast } from "sonner";
-import { ArrowLeft, Clock, Plus, Minus, ChefHat, Check } from "lucide-react";
+import { ArrowLeft, Clock, Plus, Minus, ChefHat, Check, ImageOff } from "lucide-react";
 import { useState } from "react";
-import heroImg from "@/assets/hero.jpg";
 
 export const Route = createFileRoute("/item/$id")({
   component: ItemDetail,
@@ -79,13 +78,15 @@ function ItemDetail() {
           <div className="space-y-6">
             {/* Main Card */}
             <article className="rounded-2xl border border-border bg-card overflow-hidden shadow-sm">
-              {/* Hero Image - Use hero.jpg as fallback for testing */}
               <div className="relative aspect-[21/9] w-full overflow-hidden bg-muted">
-                <img 
-                  src={menuItem.image_url || heroImg} 
-                  alt={menuItem.name}
-                  className="h-full w-full object-cover"
-                />
+                {menuItem.image_url ? (
+                  <img src={menuItem.image_url} alt={menuItem.name}
+                    className="h-full w-full object-cover" />
+                ) : (
+                  <div className="flex h-full w-full items-center justify-center">
+                    <ImageOff className="h-16 w-16 text-muted-foreground/30" />
+                  </div>
+                )}
               </div>
 
               <div className="p-8">

@@ -1,10 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuthStore } from "@/lib/auth-store";
-import { getMenuItems, getCategories, createMenuItem, updateMenuItem, deleteMenuItem, toggleMenuItemAvailability, createCategory, updateCategory, deleteCategory, type MenuItem, type Category } from "@/lib/api";
-import { UtensilsCrossed, Clock, Loader2, Plus, Pencil, Trash2, X, Search, Tags } from "lucide-react";
+import { getMenuItems, getCategories, createMenuItem, updateMenuItem, deleteMenuItem, toggleMenuItemAvailability, createCategory, updateCategory, deleteCategory, uploadImage, type MenuItem, type Category } from "@/lib/api";
+import { UtensilsCrossed, Clock, Loader2, Plus, Pencil, Trash2, X, Search, Tags, ImageIcon, Upload } from "lucide-react";
 import { fmt } from "@/lib/cart";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/dashboard/admin/menu-items")({
@@ -18,7 +18,11 @@ function AdminMenuItems() {
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
-  const [form, setForm] = useState({ name: "", description: "", base_price: 0, category_id: "", preparation_time: 10, is_available: true });
+  const [form, setForm] = useState({ name: "", description: "", base_price: 0, category_id: "", preparation_time: 10, is_available: true, image_url: "" });
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [showCatModal, setShowCatModal] = useState(false);
   const [catForm, setCatForm] = useState({ name: "", description: "" });
   const [editingCat, setEditingCat] = useState<Category | null>(null);
@@ -116,7 +120,11 @@ function AdminMenuItems() {
     onError: (err: any) => toast.error(err.message || "Failed to delete category"),
   });
 
-  const resetForm = () => setForm({ name: "", description: "", base_price: 0, category_id: categories[0]?.id || "", preparation_time: 10, is_available: true });
+  const resetForm = () => {
+    setForm({ name: "", description: "", base_price: 0, category_id: categories[0]?.id || "", preparation_time: 10, is_available: true, image_url: "" });
+    setImageFile(null);
+    setImagePreview(null);
+  };
 
   const openCreate = () => {
     setEditingItem(null);
@@ -133,13 +141,55 @@ function AdminMenuItems() {
       category_id: item.category_id,
       preparation_time: item.preparation_time || 10,
       is_available: item.is_available,
+      image_url: item.image_url || "",
     });
+    setImagePreview(item.image_url || null);
+    setImageFile(null);
     setShowModal(true);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setImageFile(file);
+    setImagePreview(URL.createObjectURL(file));
+  };
+
+  const handleRemoveImage = () => {
+    setImageFile(null);
+    setImagePreview(null);
+    setForm({ ...form, image_url: "" });
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const payload = { ...form, base_price: form.base_price, restaurant_id: user?.restaurant_id };
+    let imageUrl = form.image_url;
+
+    if (imageFile) {
+      setUploading(true);
+      try {
+        const uploadRes = await uploadImage(imageFile);
+        imageUrl = uploadRes.data.url;
+      } catch (err: any) {
+        toast.error(err.message || "Failed to upload image");
+        setUploading(false);
+        return;
+      }
+      setUploading(false);
+    }
+
+    const payload = {
+      name: form.name,
+      description: form.description || undefined,
+      base_price: form.base_price,
+      category_id: form.category_id,
+      preparation_time: form.preparation_time || undefined,
+      is_available: form.is_available,
+      image_url: imageUrl || undefined,
+      restaurant_id: user?.restaurant_id,
+    };
+
     if (editingItem) {
       updateMutation.mutate({ id: editingItem.id, data: payload });
     } else {
@@ -228,8 +278,14 @@ function AdminMenuItems() {
                   <tr key={item.id} className="bg-card hover:bg-muted/30 transition-colors">
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-3">
-                        <div className="rounded-lg bg-accent/10 p-2">
-                          <UtensilsCrossed className="h-4 w-4 text-accent" />
+                        <div className="h-10 w-10 rounded-lg overflow-hidden bg-muted shrink-0">
+                          {item.image_url ? (
+                            <img src={item.image_url} alt={item.name} className="h-full w-full object-cover" />
+                          ) : (
+                            <div className="h-full w-full flex items-center justify-center">
+                              <UtensilsCrossed className="h-4 w-4 text-muted-foreground/50" />
+                            </div>
+                          )}
                         </div>
                         <div>
                           <p className="font-medium text-foreground">{item.name}</p>
@@ -284,7 +340,7 @@ function AdminMenuItems() {
 
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="w-full max-w-md rounded-xl border border-border bg-card p-6 shadow-lg max-h-[85vh] overflow-y-auto">
+          <div className="w-full max-w-lg rounded-xl border border-border bg-card p-6 shadow-lg max-h-[85vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-4">
               <h2 className="font-serif text-xl text-foreground">{editingItem ? "Edit Menu Item" : "Add Menu Item"}</h2>
               <button onClick={() => { setShowModal(false); setEditingItem(null); resetForm(); }} className="rounded-lg p-1.5 text-muted-foreground hover:bg-accent hover:text-accent-foreground">
@@ -292,6 +348,50 @@ function AdminMenuItems() {
               </button>
             </div>
             <form onSubmit={handleSubmit} className="space-y-4">
+              {/* Image upload */}
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-1.5">Image</label>
+                <div className="flex items-start gap-4">
+                  <div className="h-24 w-24 rounded-lg overflow-hidden bg-muted shrink-0 border border-border">
+                    {imagePreview ? (
+                      <img src={imagePreview} alt="Preview" className="h-full w-full object-cover" />
+                    ) : (
+                      <div className="h-full w-full flex items-center justify-center">
+                        <ImageIcon className="h-8 w-8 text-muted-foreground/40" />
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp,image/gif"
+                      onChange={handleImageSelect}
+                      className="hidden"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="inline-flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm font-medium text-foreground hover:bg-accent"
+                    >
+                      <Upload className="h-4 w-4" />
+                      {imagePreview ? "Change Image" : "Upload Image"}
+                    </button>
+                    {imagePreview && (
+                      <button
+                        type="button"
+                        onClick={handleRemoveImage}
+                        className="inline-flex items-center gap-2 rounded-lg border border-destructive/30 px-3 py-2 text-sm font-medium text-destructive hover:bg-destructive/10"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                        Remove
+                      </button>
+                    )}
+                    <p className="text-xs text-muted-foreground">JPG, PNG, WebP or GIF. Max 5MB.</p>
+                  </div>
+                </div>
+              </div>
+
               <div>
                 <label className="block text-sm font-medium text-foreground mb-1">Name</label>
                 <input type="text" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder-muted-foreground/60 focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring" />
@@ -327,8 +427,8 @@ function AdminMenuItems() {
                 <button type="button" onClick={() => { setShowModal(false); setEditingItem(null); resetForm(); }} className="rounded-lg border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-accent">
                   Cancel
                 </button>
-                <button type="submit" disabled={createMutation.isPending || updateMutation.isPending} className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50">
-                  {createMutation.isPending || updateMutation.isPending ? "Saving..." : editingItem ? "Update" : "Create"}
+                <button type="submit" disabled={uploading || createMutation.isPending || updateMutation.isPending} className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50">
+                  {uploading ? "Uploading..." : createMutation.isPending || updateMutation.isPending ? "Saving..." : editingItem ? "Update" : "Create"}
                 </button>
               </div>
             </form>

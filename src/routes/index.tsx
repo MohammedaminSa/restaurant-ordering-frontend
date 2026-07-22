@@ -5,8 +5,7 @@ import { getCategories, getMenuItems, getRestaurantInfo, type Category, type Men
 import { SiteHeader } from "@/components/site-header";
 import { useCart, fmt } from "@/lib/cart";
 import { toast } from "sonner";
-import { Plus, Clock } from "lucide-react";
-import heroImg from "@/assets/hero.jpg";
+import { Plus, Clock, ImageOff } from "lucide-react";
 
 export const Route = createFileRoute("/")({
   component: Menu,
@@ -61,7 +60,7 @@ function Menu() {
       )}
 
       <section className="relative overflow-hidden border-b border-border/60">
-        <img src={heroSettings?.background_image || heroImg} alt={`${restaurantName} dining room`} width={1600} height={1024}
+        <img src={heroSettings?.background_image || "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=1600"} alt={`${restaurantName} dining room`} width={1600} height={1024}
           className="absolute inset-0 h-full w-full object-cover opacity-60" />
         <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
         <div className="relative mx-auto max-w-6xl px-4 py-16 sm:py-24 md:py-32">
@@ -112,11 +111,14 @@ function Menu() {
               <article key={item.id} className="group flex flex-col rounded-xl border border-border bg-card overflow-hidden shadow-sm transition-shadow hover:shadow-md">
                 {/* Image - Use hero.jpg as fallback for testing */}
                 <Link to="/item/$id" params={{ id: item.id }} className="relative aspect-[4/3] overflow-hidden bg-muted">
-                  <img 
-                    src={item.image_url || heroImg} 
-                    alt={item.name}
-                    className="h-full w-full object-cover transition-transform group-hover:scale-105"
-                  />
+                  {item.image_url ? (
+                    <img src={item.image_url} alt={item.name}
+                      className="h-full w-full object-cover transition-transform group-hover:scale-105" />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center">
+                      <ImageOff className="h-10 w-10 text-muted-foreground/30" />
+                    </div>
+                  )}
                 </Link>
                 
                 <div className="flex flex-col flex-1 p-6">
