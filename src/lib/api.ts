@@ -1080,7 +1080,9 @@ export interface RestaurantInfo {
 }
 
 export const getRestaurantInfo = async (): Promise<ApiResponse<RestaurantInfo>> => {
-  const response = await api.get('/restaurants/public/info');
+  const response = await api.get('/restaurants/public/info', {
+    params: { t: Date.now() },
+  });
   return response.data;
 };
 

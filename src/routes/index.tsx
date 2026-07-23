@@ -25,7 +25,7 @@ async function loadMenu() {
 
 function Menu() {
   const { data, isLoading } = useQuery({ queryKey: ["menu"], queryFn: loadMenu });
-  const { data: restaurant } = useQuery({ queryKey: ["restaurant-info"], queryFn: getRestaurantInfo, refetchInterval: 15000, refetchIntervalInBackground: true });
+  const { data: restaurant } = useQuery({ queryKey: ["restaurant-info"], queryFn: getRestaurantInfo, refetchInterval: 5000, refetchIntervalInBackground: true, staleTime: 0 });
   const [active, setActive] = useState<string | null>(null);
   const { add } = useCart();
   const sessionToken = localStorage.getItem("sessionToken");
