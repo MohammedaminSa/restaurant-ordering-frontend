@@ -8,9 +8,11 @@ import {
   getCategories,
   serveOrder,
   createWaiterOrder,
+  getMyRestaurant,
   type WaiterTable,
   type MenuItem,
   type Category,
+  type PaymentDetails,
 } from "@/lib/api";
 import { useAuthStore } from "@/lib/auth-store";
 import { fmt } from "@/lib/cart";
@@ -34,6 +36,8 @@ import {
   Smartphone,
   Building2,
   Banknote,
+  Wallet,
+  Landmark,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Card, CardContent } from "@/components/ui/card";
@@ -55,6 +59,7 @@ function WaiterOrders() {
   const [customerName, setCustomerName] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string>('cash');
+  const [selectedAccount, setSelectedAccount] = useState<any>(null);
   const [transactionId, setTransactionId] = useState('');
   const [orderNotes, setOrderNotes] = useState("");
   const [menuSearch, setMenuSearch] = useState("");
@@ -85,6 +90,12 @@ function WaiterOrders() {
     enabled: !!user && showCreateModal,
   });
 
+  const restaurantQuery = useQuery({
+    queryKey: ["my-restaurant", user?.restaurant_id],
+    queryFn: () => getMyRestaurant(),
+    enabled: !!user && showCreateModal,
+  });
+
   const createOrderMutation = useMutation({
     mutationFn: (data: Parameters<typeof createWaiterOrder>[0]) =>
       createWaiterOrder(data),
@@ -110,6 +121,10 @@ function WaiterOrders() {
   const orders = (ordersQuery.data?.data || []) as any[];
   const categories = (categoriesQuery.data?.data || []) as Category[];
   const menuItems = (menuItemsQuery.data?.data || []) as MenuItem[];
+  const restaurant = (restaurantQuery.data?.data || {}) as any;
+  const paymentDetails = restaurant.payment_details as PaymentDetails | undefined;
+  const wallets = paymentDetails?.wallets || [];
+  const banks = paymentDetails?.banks || [];
 
   const readyOrders = orders
     .filter((o) => o.status === "ready")
@@ -160,6 +175,7 @@ function WaiterOrders() {
       special_instructions: orderNotes || undefined,
       payment_method: selectedPaymentMethod as any,
       transaction_id: selectedPaymentMethod !== 'cash' ? transactionId.trim() : undefined,
+      payment_account: selectedPaymentMethod !== 'cash' && selectedAccount ? selectedAccount : undefined,
     });
   };
 
@@ -170,6 +186,7 @@ function WaiterOrders() {
     setCustomerName("");
     setCustomerPhone("");
     setSelectedPaymentMethod('cash');
+    setSelectedAccount(null);
     setTransactionId('');
     setOrderNotes("");
   };
@@ -360,6 +377,7 @@ function WaiterOrders() {
                     value={selectedPaymentMethod}
                     onValueChange={(v) => {
                       setSelectedPaymentMethod(v);
+                      setSelectedAccount(null);
                       if (v === 'cash') setTransactionId('');
                     }}
                   >
@@ -390,6 +408,76 @@ function WaiterOrders() {
                       </SelectItem>
                     </SelectContent>
                   </Select>
+
+                  {selectedPaymentMethod === 'telebirr' && wallets.length > 0 && (
+                    <div className="space-y-2">
+                      <label className="block text-xs font-medium text-foreground">Wallet Account</label>
+                      <Select
+                        value={selectedAccount ? JSON.stringify(selectedAccount) : ''}
+                        onValueChange={(v) => setSelectedAccount(JSON.parse(v))}
+                      >
+                        <SelectTrigger className="h-11">
+                          <div className="flex items-center gap-2">
+                            <Wallet className="h-4 w-4 text-muted-foreground shrink-0" />
+                            <SelectValue placeholder="Choose a wallet" />
+                          </div>
+                        </SelectTrigger>
+                        <SelectContent>
+                          {wallets.map((w: any, i: number) => (
+                            <SelectItem key={i} value={JSON.stringify(w)}>
+                              <div className="flex flex-col">
+                                <div className="flex items-center gap-2">
+                                  <Smartphone className="h-4 w-4 text-muted-foreground shrink-0" />
+                                  <p className="text-sm font-medium">{w.type}</p>
+                                </div>
+                                <p className="text-xs text-muted-foreground pl-6">{w.account_name} — {w.phone}</p>
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+                  {selectedPaymentMethod === 'telebirr' && wallets.length === 0 && (
+                    <div className="rounded-lg border border-dashed border-muted-foreground/30 p-4 text-center text-sm text-muted-foreground">
+                      No wallets configured. Please contact the restaurant.
+                    </div>
+                  )}
+
+                  {selectedPaymentMethod === 'bank_transfer' && banks.length > 0 && (
+                    <div className="space-y-2">
+                      <label className="block text-xs font-medium text-foreground">Bank Account</label>
+                      <Select
+                        value={selectedAccount ? JSON.stringify(selectedAccount) : ''}
+                        onValueChange={(v) => setSelectedAccount(JSON.parse(v))}
+                      >
+                        <SelectTrigger className="h-11">
+                          <div className="flex items-center gap-2">
+                            <Landmark className="h-4 w-4 text-muted-foreground shrink-0" />
+                            <SelectValue placeholder="Choose a bank account" />
+                          </div>
+                        </SelectTrigger>
+                        <SelectContent>
+                          {banks.map((b: any, i: number) => (
+                            <SelectItem key={i} value={JSON.stringify(b)}>
+                              <div className="flex flex-col">
+                                <div className="flex items-center gap-2">
+                                  <Building2 className="h-4 w-4 text-muted-foreground shrink-0" />
+                                  <p className="text-sm font-medium">{b.bank_name}</p>
+                                </div>
+                                <p className="text-xs text-muted-foreground pl-6">{b.account_holder} — {b.account_number}</p>
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+                  {selectedPaymentMethod === 'bank_transfer' && banks.length === 0 && (
+                    <div className="rounded-lg border border-dashed border-muted-foreground/30 p-4 text-center text-sm text-muted-foreground">
+                      No bank accounts configured. Please contact the restaurant.
+                    </div>
+                  )}
 
                   {selectedPaymentMethod !== 'cash' && (
                     <div>
@@ -471,7 +559,7 @@ function WaiterOrders() {
               <Button variant="outline" onClick={handleCloseModal}>Cancel</Button>
               <Button
                 onClick={handleCreateOrder}
-                disabled={createOrderMutation.isPending || cart.length === 0 || !selectedTable || (!selectedTable.session_token && !customerName.trim()) || (selectedPaymentMethod !== 'cash' && !transactionId.trim())}
+                disabled={createOrderMutation.isPending || cart.length === 0 || !selectedTable || (!selectedTable.session_token && !customerName.trim()) || (selectedPaymentMethod !== 'cash' && !transactionId.trim()) || (selectedPaymentMethod !== 'cash' && !selectedAccount)}
               >
                 {createOrderMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Send className="h-4 w-4 mr-1" />}
                 Place Order
