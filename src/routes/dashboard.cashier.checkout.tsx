@@ -56,7 +56,7 @@ function PaymentDetailsBlock({ order }: { order: any }) {
     <div className="space-y-2">
       <div className="flex items-center gap-2">
         <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-          {method === "cash" ? "Cash" : method === "telebirr" ? "Digital Wallet" : "Bank Transfer"}
+          {method === "cash" ? "Cash" : method === "telebirr" ? (order.payment_account?.type || "Digital Wallet") : "Bank Transfer"}
         </span>
       </div>
 
@@ -269,9 +269,11 @@ function CashierCheckout() {
     return <Building2 className="h-4 w-4" />;
   };
 
-  const paymentLabel = (method: string) => {
+  const paymentLabel = (order: any) => {
+    const method = order.payment_method;
     if (method === "cash") return "Cash";
-    if (method === "telebirr") return "Digital Wallet";
+    if (method === "telebirr") return order.payment_account?.type || "Digital Wallet";
+    if (method === "bank_transfer") return "Bank Transfer";
     return method?.replace(/_/g, " ") || "N/A";
   };
 
@@ -315,7 +317,7 @@ function CashierCheckout() {
             <div className="flex items-center gap-2 text-sm">
               {paymentIcon(order.payment_method)}
               <span className="capitalize text-muted-foreground hidden sm:inline">
-                {paymentLabel(order.payment_method)}
+                {paymentLabel(order)}
               </span>
             </div>
             {isExpanded ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
