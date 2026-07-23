@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuthStore } from "@/lib/auth-store";
 import { getTables, createTable, updateTable, deleteTable, generateTableQR, getUsers, assignTableToWaiter, type WaiterTable, type CreateTableRequest, type User } from "@/lib/api";
-import { Table as TableIcon, Users, MapPin, Loader2, Plus, Pencil, Trash2, X, QrCode, UserPlus, UserCheck } from "lucide-react";
+import { Table as TableIcon, Users, MapPin, Loader2, Plus, Pencil, Trash2, X, QrCode, UserPlus, UserCheck, Download } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -17,6 +17,7 @@ function AdminTables() {
   const [editingTable, setEditingTable] = useState<WaiterTable | null>(null);
   const [form, setForm] = useState({ table_number: "", capacity: 4, location: "main" });
   const [qrImage, setQrImage] = useState<string | null>(null);
+  const [qrTableNumber, setQrTableNumber] = useState<string>("");
   const [assignTableId, setAssignTableId] = useState<string | null>(null);
   const [selectedWaiterId, setSelectedWaiterId] = useState("");
 
@@ -209,7 +210,7 @@ function AdminTables() {
                         <button onClick={() => { setAssignTableId(table.id); setSelectedWaiterId(""); }} className="rounded-lg border border-border p-2 text-foreground hover:bg-accent hover:text-accent-foreground" title="Assign Waiter">
                           <UserPlus className="h-4 w-4" />
                         </button>
-                        <button onClick={() => qrMutation.mutate(table.id)} className="rounded-lg border border-border p-2 text-foreground hover:bg-accent hover:text-accent-foreground" title="Generate QR Code">
+                        <button onClick={() => { setQrTableNumber(table.table_number); qrMutation.mutate(table.id); }} className="rounded-lg border border-border p-2 text-foreground hover:bg-accent hover:text-accent-foreground" title="Generate QR Code">
                           <QrCode className="h-4 w-4" />
                         </button>
                         <button onClick={() => openEdit(table)} className="rounded-lg border border-border p-2 text-foreground hover:bg-accent hover:text-accent-foreground">
@@ -305,6 +306,17 @@ function AdminTables() {
               </button>
             </div>
             <img src={qrImage} alt="Table QR Code" className="w-full rounded-lg" />
+            <button
+              onClick={() => {
+                const link = document.createElement('a');
+                link.download = `table-qr-${qrTableNumber || ''}.png`;
+                link.href = qrImage;
+                link.click();
+              }}
+              className="mt-4 w-full inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+            >
+              <Download className="h-4 w-4" /> Download PNG
+            </button>
           </div>
         </div>
       )}
