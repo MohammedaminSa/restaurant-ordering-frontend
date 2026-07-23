@@ -69,6 +69,11 @@ function QRScanPage() {
   const handleStartSession = () => {
     if (!tableInfo) return;
     
+    // Clear any stale session data before starting fresh
+    localStorage.removeItem("sessionToken");
+    localStorage.removeItem("sessionData");
+    localStorage.removeItem("bistro-cart-v1");
+    
     // Store pending table info for later session creation
     localStorage.setItem("pendingTableInfo", JSON.stringify(tableInfo));
     toast.success("Table selected! Browse the menu to start ordering.");
