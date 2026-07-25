@@ -14,7 +14,7 @@ import {
   ArrowUp,
 } from "lucide-react";
 import {
-  PieChart, Pie, BarChart, Bar, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  PieChart, Pie, Cell, Tooltip, ResponsiveContainer,
 } from "recharts";
 
 export const Route = createFileRoute("/dashboard/admin/reports")({
@@ -222,23 +222,28 @@ function AdminReports() {
           </div>
           <div className="p-5">
             <ResponsiveContainer width="100%" height={220}>
-              <BarChart data={[
-                { name: "Pending", value: pendingOrders.length },
-                { name: "Preparing", value: preparingOrders.length },
-                { name: "Ready", value: readyOrders.length },
-                { name: "Served", value: servedOrders.length },
-              ]}>
-                <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                <XAxis dataKey="name" tick={{ fontSize: 12 }} className="text-muted-foreground" />
-                <YAxis allowDecimals={false} tick={{ fontSize: 12 }} className="text-muted-foreground" />
-                <Tooltip />
-                <Bar dataKey="value" radius={[4, 4, 0, 0]}>
+              <PieChart>
+                <Pie
+                  data={[
+                    { name: "Pending", value: pendingOrders.length },
+                    { name: "Preparing", value: preparingOrders.length },
+                    { name: "Ready", value: readyOrders.length },
+                    { name: "Served", value: servedOrders.length },
+                  ]}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={50}
+                  outerRadius={90}
+                  paddingAngle={3}
+                  dataKey="value"
+                >
                   <Cell fill="#f59e0b" />
                   <Cell fill="#f97316" />
                   <Cell fill="#10b981" />
                   <Cell fill="#3b82f6" />
-                </Bar>
-              </BarChart>
+                </Pie>
+                <Tooltip />
+              </PieChart>
             </ResponsiveContainer>
           </div>
         </div>

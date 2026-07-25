@@ -11,7 +11,7 @@ import {
   Clock, AlertCircle, CheckCircle2
 } from "lucide-react";
 import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
+  PieChart, Pie, Cell, Tooltip, ResponsiveContainer,
 } from "recharts";
 
 export const Route = createFileRoute("/dashboard/")({
@@ -233,23 +233,28 @@ function DashboardHome() {
             Order Status Overview
           </h2>
           <ResponsiveContainer width="100%" height={240}>
-            <BarChart data={[
-              { name: "Pending", value: pendingOrders.length },
-              { name: "Preparing", value: preparingOrders.length },
-              { name: "Ready", value: readyOrders.length },
-              { name: "Served", value: servedOrders.length },
-            ]}>
-              <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-              <XAxis dataKey="name" tick={{ fontSize: 11 }} className="text-muted-foreground" />
-              <YAxis allowDecimals={false} tick={{ fontSize: 11 }} className="text-muted-foreground" />
-              <Tooltip />
-              <Bar dataKey="value" radius={[4, 4, 0, 0]}>
+            <PieChart>
+              <Pie
+                data={[
+                  { name: "Pending", value: pendingOrders.length },
+                  { name: "Preparing", value: preparingOrders.length },
+                  { name: "Ready", value: readyOrders.length },
+                  { name: "Served", value: servedOrders.length },
+                ]}
+                cx="50%"
+                cy="50%"
+                innerRadius={50}
+                outerRadius={90}
+                paddingAngle={3}
+                dataKey="value"
+              >
                 <Cell fill="#f59e0b" />
                 <Cell fill="#f97316" />
                 <Cell fill="#10b981" />
                 <Cell fill="#3b82f6" />
-              </Bar>
-            </BarChart>
+              </Pie>
+              <Tooltip />
+            </PieChart>
           </ResponsiveContainer>
           <div className="mt-6 grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 text-center text-sm">
             <div className="rounded-lg bg-amber-50 dark:bg-amber-950/30 p-3">
@@ -281,16 +286,25 @@ function DashboardHome() {
             <p className="text-sm text-muted-foreground py-8 text-center">No categories yet</p>
           ) : (
             <ResponsiveContainer width="100%" height={240}>
-              <BarChart data={categories.map((cat) => ({
-                name: cat.name,
-                value: items.filter((i) => i.category_id === cat.id).length,
-              }))}>
-                <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                <XAxis dataKey="name" tick={{ fontSize: 11 }} className="text-muted-foreground" />
-                <YAxis allowDecimals={false} tick={{ fontSize: 11 }} className="text-muted-foreground" />
+              <PieChart>
+                <Pie
+                  data={categories.map((cat) => ({
+                    name: cat.name,
+                    value: items.filter((i) => i.category_id === cat.id).length,
+                  }))}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={50}
+                  outerRadius={90}
+                  paddingAngle={3}
+                  dataKey="value"
+                >
+                  {categories.map((cat, i) => (
+                    <Cell key={cat.id} fill={["#f59e0b", "#10b981", "#3b82f6", "#8b5cf6", "#ef4444", "#ec4899"][i % 6]} />
+                  ))}
+                </Pie>
                 <Tooltip />
-                <Bar dataKey="value" radius={[4, 4, 0, 0]} fill="hsl(var(--accent))" />
-              </BarChart>
+              </PieChart>
             </ResponsiveContainer>
           )}
           <div className="mt-6 flex items-center gap-2 text-sm text-muted-foreground">
