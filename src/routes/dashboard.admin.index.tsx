@@ -19,7 +19,7 @@ import {
   UserPlus,
 } from "lucide-react";
 import {
-  PieChart, Pie, Cell, Tooltip, ResponsiveContainer,
+  PieChart, Pie, BarChart, Bar, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from "recharts";
 
 export const Route = createFileRoute("/dashboard/admin/")({
@@ -393,28 +393,23 @@ function RestaurantAdminOverview({ user }: { user: any }) {
             <p className="text-sm text-muted-foreground py-6 text-center">No staff accounts yet</p>
           ) : (
             <ResponsiveContainer width="100%" height={200}>
-              <PieChart>
-                <Pie
-                  data={[
-                    { name: "Waiters", value: waiters.length },
-                    { name: "Cashiers", value: cashiers.length },
-                    { name: "Kitchen", value: kitchenStaff.length },
-                    { name: "Admins", value: admins.length },
-                  ]}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={50}
-                  outerRadius={85}
-                  paddingAngle={3}
-                  dataKey="value"
-                >
+              <BarChart data={[
+                { name: "Waiters", value: waiters.length },
+                { name: "Cashiers", value: cashiers.length },
+                { name: "Kitchen", value: kitchenStaff.length },
+                { name: "Admins", value: admins.length },
+              ]}>
+                <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+                <XAxis dataKey="name" tick={{ fontSize: 11 }} className="text-muted-foreground" />
+                <YAxis allowDecimals={false} tick={{ fontSize: 11 }} className="text-muted-foreground" />
+                <Tooltip />
+                <Bar dataKey="value" radius={[4, 4, 0, 0]}>
                   <Cell fill="#3b82f6" />
                   <Cell fill="#10b981" />
                   <Cell fill="#f97316" />
                   <Cell fill="#8b5cf6" />
-                </Pie>
-                <Tooltip />
-              </PieChart>
+                </Bar>
+              </BarChart>
             </ResponsiveContainer>
           )}
           <div className="mt-4 text-sm text-muted-foreground">
@@ -428,26 +423,21 @@ function RestaurantAdminOverview({ user }: { user: any }) {
             Order Status
           </h2>
           <ResponsiveContainer width="100%" height={200}>
-            <PieChart>
-              <Pie
-                data={[
-                  { name: "Pending", value: pendingOrders.length },
-                  { name: "Preparing", value: preparingOrders.length },
-                  { name: "Ready", value: readyOrders.length },
-                ]}
-                cx="50%"
-                cy="50%"
-                innerRadius={50}
-                outerRadius={85}
-                paddingAngle={3}
-                dataKey="value"
-              >
+            <BarChart data={[
+              { name: "Pending", value: pendingOrders.length },
+              { name: "Preparing", value: preparingOrders.length },
+              { name: "Ready", value: readyOrders.length },
+            ]}>
+              <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+              <XAxis dataKey="name" tick={{ fontSize: 11 }} className="text-muted-foreground" />
+              <YAxis allowDecimals={false} tick={{ fontSize: 11 }} className="text-muted-foreground" />
+              <Tooltip />
+              <Bar dataKey="value" radius={[4, 4, 0, 0]}>
                 <Cell fill="#f59e0b" />
                 <Cell fill="#f97316" />
                 <Cell fill="#10b981" />
-              </Pie>
-              <Tooltip />
-            </PieChart>
+              </Bar>
+            </BarChart>
           </ResponsiveContainer>
           <div className="mt-6 grid grid-cols-3 gap-3 text-center text-sm">
             <div className="rounded-lg bg-amber-50 dark:bg-amber-950/30 p-3">

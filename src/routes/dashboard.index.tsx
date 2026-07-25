@@ -11,7 +11,7 @@ import {
   Clock, AlertCircle, CheckCircle2
 } from "lucide-react";
 import {
-  PieChart, Pie, Cell, Tooltip, ResponsiveContainer,
+  PieChart, Pie, BarChart, Bar, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from "recharts";
 
 export const Route = createFileRoute("/dashboard/")({
@@ -233,28 +233,23 @@ function DashboardHome() {
             Order Status Overview
           </h2>
           <ResponsiveContainer width="100%" height={240}>
-            <PieChart>
-              <Pie
-                data={[
-                  { name: "Pending", value: pendingOrders.length },
-                  { name: "Preparing", value: preparingOrders.length },
-                  { name: "Ready", value: readyOrders.length },
-                  { name: "Served", value: servedOrders.length },
-                ]}
-                cx="50%"
-                cy="50%"
-                innerRadius={50}
-                outerRadius={90}
-                paddingAngle={3}
-                dataKey="value"
-              >
+            <BarChart data={[
+              { name: "Pending", value: pendingOrders.length },
+              { name: "Preparing", value: preparingOrders.length },
+              { name: "Ready", value: readyOrders.length },
+              { name: "Served", value: servedOrders.length },
+            ]}>
+              <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+              <XAxis dataKey="name" tick={{ fontSize: 11 }} className="text-muted-foreground" />
+              <YAxis allowDecimals={false} tick={{ fontSize: 11 }} className="text-muted-foreground" />
+              <Tooltip />
+              <Bar dataKey="value" radius={[4, 4, 0, 0]}>
                 <Cell fill="#f59e0b" />
                 <Cell fill="#f97316" />
                 <Cell fill="#10b981" />
                 <Cell fill="#3b82f6" />
-              </Pie>
-              <Tooltip />
-            </PieChart>
+              </Bar>
+            </BarChart>
           </ResponsiveContainer>
           <div className="mt-6 grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 text-center text-sm">
             <div className="rounded-lg bg-amber-50 dark:bg-amber-950/30 p-3">
