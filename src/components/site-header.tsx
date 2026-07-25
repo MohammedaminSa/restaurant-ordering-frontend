@@ -1,10 +1,10 @@
 import { Link } from "@tanstack/react-router";
-import { ShoppingBag, UtensilsCrossed, LayoutDashboard, LogOut, UserIcon, ChevronDown, Menu, X } from "lucide-react";
+import { ShoppingBag, UtensilsCrossed, LayoutDashboard, LogOut, UserIcon, ChevronDown, Menu, X, Lock } from "lucide-react";
 import { useCart } from "@/lib/cart";
 import { useAuthStore } from "@/lib/auth-store";
 import { ROLE_LABELS, ROLE_DASHBOARD, getRestaurantInfo, type User, type RestaurantInfo } from "@/lib/api";
 import { toast } from "sonner";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { ThemeToggle } from "@/components/theme-toggle";
 
 export function SiteHeader() {
@@ -13,6 +13,9 @@ export function SiteHeader() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [restaurant, setRestaurant] = useState<RestaurantInfo | null>(null);
+  const [showStaffLogin, setShowStaffLogin] = useState(false);
+  const tapCountRef = useRef(0);
+  const tapTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -36,19 +39,32 @@ export function SiteHeader() {
     setMobileNavOpen(false);
   };
 
+  const handleLogoClick = useCallback(() => {
+    tapCountRef.current += 1;
+    if (tapTimerRef.current) clearTimeout(tapTimerRef.current);
+    if (tapCountRef.current >= 5) {
+      tapCountRef.current = 0;
+      setShowStaffLogin(true);
+      return;
+    }
+    tapTimerRef.current = setTimeout(() => {
+      tapCountRef.current = 0;
+    }, 3000);
+  }, []);
+
   const displayName = restaurant?.name || 'Restaurant';
 
   return (
     <header className="sticky top-0 z-40 border-b border-border/60 bg-background/85 backdrop-blur">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4">
-        <Link to="/" className="flex items-center gap-2 text-foreground shrink-0">
+        <button onClick={handleLogoClick} className="flex items-center gap-2 text-foreground shrink-0">
           {restaurant?.logo_url ? (
             <img src={restaurant.logo_url} alt={displayName} className="h-8 w-8 rounded-full object-cover" />
           ) : (
             <UtensilsCrossed className="h-5 w-5 text-accent" />
           )}
           <span className="font-serif text-xl">{displayName}</span>
-        </Link>
+        </button>
 
         {/* Desktop nav */}
         <nav className="hidden md:flex items-center gap-4 lg:gap-6 text-sm">
@@ -104,15 +120,15 @@ export function SiteHeader() {
                 </div>
               )}
             </div>
-          ) : (
+          ) : showStaffLogin ? (
             <Link
               to="/auth"
-              className="text-muted-foreground transition-colors hover:text-foreground"
-              activeProps={{ className: "text-foreground" }}
+              className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
             >
+              <Lock className="h-3.5 w-3.5" />
               Staff Login
             </Link>
-          )}
+          ) : null}
 
           <ThemeToggle />
 
@@ -188,15 +204,16 @@ export function SiteHeader() {
                   Sign Out
                 </button>
               </>
-            ) : (
+            ) : showStaffLogin ? (
               <Link
                 to="/auth"
-                onClick={() => setMobileNavOpen(false)}
+                onClick={() => { setMobileNavOpen(false); setShowStaffLogin(false); }}
                 className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground hover:bg-accent"
               >
+                <Lock className="h-4 w-4" />
                 Staff Login
               </Link>
-            )}
+            ) : null}
             <div className="pt-2 px-3">
               <ThemeToggle />
             </div>
