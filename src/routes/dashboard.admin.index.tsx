@@ -136,7 +136,48 @@ function SuperAdminOverview() {
         </div>
       </div>
 
-      <div className="grid gap-4 sm:gap-6 grid-cols-1 md:grid-cols-2">
+      <div className="grid gap-4 sm:gap-6 grid-cols-1 md:grid-cols-3">
+        <div className="rounded-xl border border-border bg-card p-6">
+          <h2 className="font-serif text-xl text-foreground mb-4 flex items-center gap-2">
+            <Building2 className="h-5 w-5 text-accent" />
+            Restaurant Status
+          </h2>
+          {restaurants.length === 0 ? (
+            <p className="text-sm text-muted-foreground py-6 text-center">No restaurants yet</p>
+          ) : (
+            <ResponsiveContainer width="100%" height={200}>
+              <PieChart>
+                <Pie
+                  data={[
+                    { name: "Active", value: activeRestaurants.length },
+                    { name: "Inactive", value: restaurants.length - activeRestaurants.length },
+                  ]}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={50}
+                  outerRadius={85}
+                  paddingAngle={3}
+                  dataKey="value"
+                >
+                  <Cell fill="#10b981" />
+                  <Cell fill="#ef4444" />
+                </Pie>
+                <Tooltip />
+              </PieChart>
+            </ResponsiveContainer>
+          )}
+          <div className="mt-4 flex items-center justify-center gap-4 text-sm text-muted-foreground">
+            <span className="flex items-center gap-1.5">
+              <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
+              Active {activeRestaurants.length}
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="h-2.5 w-2.5 rounded-full bg-red-500" />
+              Inactive {restaurants.length - activeRestaurants.length}
+            </span>
+          </div>
+        </div>
+
         <div className="rounded-xl border border-border bg-card p-6">
           <h2 className="font-serif text-xl text-foreground mb-4 flex items-center gap-2">
             <Building2 className="h-5 w-5 text-accent" />
