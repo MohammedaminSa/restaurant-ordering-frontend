@@ -10,6 +10,9 @@ import {
   TrendingUp, ShoppingBag, ClipboardList, UserCheck,
   Clock, AlertCircle, CheckCircle2
 } from "lucide-react";
+import {
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
+} from "recharts";
 
 export const Route = createFileRoute("/dashboard/")({
   component: DashboardHome,
@@ -229,19 +232,25 @@ function DashboardHome() {
             <ChefHat className="h-5 w-5 text-accent" />
             Order Status Overview
           </h2>
-          <div className="space-y-4">
-            {statusData.map((item) => (
-              <div key={item.label}>
-                <div className="flex items-center justify-between text-sm mb-1.5">
-                  <span className="text-foreground font-medium">{item.label}</span>
-                  <span className="text-muted-foreground">{item.value}</span>
-                </div>
-                <div className="h-2 rounded-full bg-muted overflow-hidden">
-                  <div className={`h-full rounded-full ${item.color} transition-all`} style={{ width: `${(item.value / maxStatus) * 100}%` }} />
-                </div>
-              </div>
-            ))}
-          </div>
+          <ResponsiveContainer width="100%" height={240}>
+            <BarChart data={[
+              { name: "Pending", value: pendingOrders.length },
+              { name: "Preparing", value: preparingOrders.length },
+              { name: "Ready", value: readyOrders.length },
+              { name: "Served", value: servedOrders.length },
+            ]}>
+              <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+              <XAxis dataKey="name" tick={{ fontSize: 11 }} className="text-muted-foreground" />
+              <YAxis allowDecimals={false} tick={{ fontSize: 11 }} className="text-muted-foreground" />
+              <Tooltip />
+              <Bar dataKey="value" radius={[4, 4, 0, 0]}>
+                <Cell fill="#f59e0b" />
+                <Cell fill="#f97316" />
+                <Cell fill="#10b981" />
+                <Cell fill="#3b82f6" />
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
           <div className="mt-6 grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 text-center text-sm">
             <div className="rounded-lg bg-amber-50 dark:bg-amber-950/30 p-3">
               <p className="text-2xl font-bold text-amber-600 dark:text-amber-400">{pendingOrders.length}</p>
@@ -268,27 +277,22 @@ function DashboardHome() {
             <ShoppingBag className="h-5 w-5 text-accent" />
             Menu by Category
           </h2>
-          <div className="space-y-4">
-            {categories.length === 0 ? (
-              <p className="text-sm text-muted-foreground py-8 text-center">No categories yet</p>
-            ) : (
-              categories.map((cat) => {
-                const count = items.filter((i) => i.category_id === cat.id).length;
-                const maxCat = Math.max(...categories.map((c) => items.filter((i) => i.category_id === c.id).length), 1);
-                return (
-                  <div key={cat.id}>
-                    <div className="flex items-center justify-between text-sm mb-1.5">
-                      <span className="text-foreground font-medium">{cat.name}</span>
-                      <span className="text-muted-foreground">{count} items</span>
-                    </div>
-                    <div className="h-2 rounded-full bg-muted overflow-hidden">
-                      <div className="h-full rounded-full bg-accent transition-all" style={{ width: `${(count / maxCat) * 100}%` }} />
-                    </div>
-                  </div>
-                );
-              })
-            )}
-          </div>
+          {categories.length === 0 ? (
+            <p className="text-sm text-muted-foreground py-8 text-center">No categories yet</p>
+          ) : (
+            <ResponsiveContainer width="100%" height={240}>
+              <BarChart data={categories.map((cat) => ({
+                name: cat.name,
+                value: items.filter((i) => i.category_id === cat.id).length,
+              }))}>
+                <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+                <XAxis dataKey="name" tick={{ fontSize: 11 }} className="text-muted-foreground" />
+                <YAxis allowDecimals={false} tick={{ fontSize: 11 }} className="text-muted-foreground" />
+                <Tooltip />
+                <Bar dataKey="value" radius={[4, 4, 0, 0]} fill="hsl(var(--accent))" />
+              </BarChart>
+            </ResponsiveContainer>
+          )}
           <div className="mt-6 flex items-center gap-2 text-sm text-muted-foreground">
             <TrendingUp className="h-4 w-4" />
             <span>{categories.length} categories · {items.length} total items</span>

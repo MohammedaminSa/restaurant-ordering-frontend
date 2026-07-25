@@ -13,6 +13,9 @@ import {
   Table as TableIcon,
   ArrowUp,
 } from "lucide-react";
+import {
+  PieChart, Pie, BarChart, Bar, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+} from "recharts";
 
 export const Route = createFileRoute("/dashboard/admin/reports")({
   component: AdminReports,
@@ -175,17 +178,33 @@ function AdminReports() {
               <p className="text-sm text-muted-foreground text-center py-4">No payment data yet</p>
             ) : (
               <div className="space-y-4">
+                <ResponsiveContainer width="100%" height={220}>
+                  <PieChart>
+                    <Pie
+                      data={Object.entries(paymentsByMethod).map(([method, amount]) => ({
+                        name: method.replace(/_/g, " "),
+                        value: amount,
+                      }))}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={50}
+                      outerRadius={90}
+                      paddingAngle={3}
+                      dataKey="value"
+                    >
+                      {Object.entries(paymentsByMethod).map(([method], index) => (
+                        <Cell key={method} fill={["#f59e0b", "#10b981", "#3b82f6", "#8b5cf6", "#ef4444"][index % 5]} />
+                      ))}
+                    </Pie>
+                    <Tooltip formatter={(value: number) => fmt(value)} />
+                  </PieChart>
+                </ResponsiveContainer>
                 {Object.entries(paymentsByMethod).map(([method, amount]) => {
                   const pct = totalFromPayments > 0 ? (amount / totalFromPayments) * 100 : 0;
                   return (
-                    <div key={method}>
-                      <div className="flex items-center justify-between text-sm mb-1.5">
-                        <span className="text-foreground font-medium capitalize">{method.replace(/_/g, " ")}</span>
-                        <span className="text-muted-foreground">{fmt(amount)} ({pct.toFixed(0)}%)</span>
-                      </div>
-                      <div className="h-2.5 rounded-full bg-muted overflow-hidden">
-                        <div className="h-full rounded-full bg-accent transition-all" style={{ width: `${pct}%` }} />
-                      </div>
+                    <div key={method} className="flex items-center justify-between text-sm">
+                      <span className="text-foreground capitalize">{method.replace(/_/g, " ")}</span>
+                      <span className="text-muted-foreground">{fmt(amount)} ({pct.toFixed(0)}%)</span>
                     </div>
                   );
                 })}
@@ -202,27 +221,25 @@ function AdminReports() {
             </h2>
           </div>
           <div className="p-5">
-            <div className="space-y-4">
-              {[
-                { label: "Pending", value: pendingOrders.length, color: "bg-amber-500" },
-                { label: "Preparing", value: preparingOrders.length, color: "bg-orange-500" },
-                { label: "Ready", value: readyOrders.length, color: "bg-emerald-500" },
-                { label: "Served", value: servedOrders.length, color: "bg-blue-500" },
-              ].map((item) => {
-                const pct = orders.length > 0 ? (item.value / orders.length) * 100 : 0;
-                return (
-                  <div key={item.label}>
-                    <div className="flex items-center justify-between text-sm mb-1.5">
-                      <span className="text-foreground font-medium">{item.label}</span>
-                      <span className="text-muted-foreground">{item.value} ({pct.toFixed(0)}%)</span>
-                    </div>
-                    <div className="h-2.5 rounded-full bg-muted overflow-hidden">
-                      <div className={`h-full rounded-full ${item.color} transition-all`} style={{ width: `${pct}%` }} />
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+            <ResponsiveContainer width="100%" height={220}>
+              <BarChart data={[
+                { name: "Pending", value: pendingOrders.length },
+                { name: "Preparing", value: preparingOrders.length },
+                { name: "Ready", value: readyOrders.length },
+                { name: "Served", value: servedOrders.length },
+              ]}>
+                <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+                <XAxis dataKey="name" tick={{ fontSize: 12 }} className="text-muted-foreground" />
+                <YAxis allowDecimals={false} tick={{ fontSize: 12 }} className="text-muted-foreground" />
+                <Tooltip />
+                <Bar dataKey="value" radius={[4, 4, 0, 0]}>
+                  <Cell fill="#f59e0b" />
+                  <Cell fill="#f97316" />
+                  <Cell fill="#10b981" />
+                  <Cell fill="#3b82f6" />
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
           </div>
         </div>
       </div>
