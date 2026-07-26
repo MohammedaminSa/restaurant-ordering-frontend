@@ -28,7 +28,9 @@ function AuthPage() {
   const [restaurantName, setRestaurantName] = useState("Restaurant");
 
   useEffect(() => {
-    getRestaurantInfo().then(r => setRestaurantName(r.data?.name || 'Restaurant')).catch(() => {});
+    const params = new URLSearchParams(window.location.search);
+    const rid = params.get('restaurantId') || undefined;
+    getRestaurantInfo(rid).then(r => setRestaurantName(r.data?.name || 'Restaurant')).catch(() => {});
   }, []);
 
   // If already authenticated, redirect to dashboard

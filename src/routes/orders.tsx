@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { getSessionOrders, getSessionByToken, getSessionNotifications, type PlacedOrder } from "@/lib/api";
+import { setDefaultCurrency } from "@/lib/cart";
 import { SiteHeader } from "@/components/site-header";
 import { fmt } from "@/lib/cart";
 import { Clock, ChefHat, CheckCircle2, Loader2, Package, AlertCircle, PartyPopper, Timer } from "lucide-react";
@@ -17,6 +18,7 @@ function OrdersPage() {
   const sessionDataStr = localStorage.getItem("sessionData");
   const sessionData = sessionDataStr ? JSON.parse(sessionDataStr) : null;
   const ordersRestaurantId = sessionData?.restaurant_id;
+  if (sessionData?.currency) setDefaultCurrency(sessionData.currency);
   const hasPendingOrder = localStorage.getItem("pendingOrder") === "true";
 
   // Poll session status to detect when cashier completes the bill

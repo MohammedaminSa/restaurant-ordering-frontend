@@ -7,8 +7,15 @@ export const CURRENCY_SYMBOLS: Record<string, string> = {
   JPY: '¥', CNY: '¥', INR: '₹', BRL: 'R$', AUD: 'A$', CAD: 'C$',
 };
 
+let _defaultCurrency = '';
+
+export function setDefaultCurrency(currency: string) {
+  _defaultCurrency = currency;
+}
+
 export const fmt = (n: number, currency?: string) => {
-  const sym = currency ? CURRENCY_SYMBOLS[currency] || currency + ' ' : '$';
+  const cur = currency || _defaultCurrency;
+  const sym = cur ? CURRENCY_SYMBOLS[cur] || cur + ' ' : '$';
   return `${sym}${n.toFixed(2)}`;
 };
 

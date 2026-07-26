@@ -1,6 +1,7 @@
 import { createFileRoute, Link, useNavigate, Outlet } from "@tanstack/react-router";
 import { useAuthStore } from "@/lib/auth-store";
 import { getRestaurantInfo, ROLE_LABELS, type User } from "@/lib/api";
+import { setDefaultCurrency } from "@/lib/cart";
 import {
   LayoutDashboard,
   ChefHat,
@@ -85,7 +86,10 @@ function DashboardLayout() {
 
   useEffect(() => {
     const rid = user?.restaurant_id;
-    getRestaurantInfo(rid).then(r => setRestaurantName(r.data?.name || 'Restaurant')).catch(() => {});
+    getRestaurantInfo(rid).then(r => {
+      setRestaurantName(r.data?.name || 'Restaurant');
+      if (r.data?.currency) setDefaultCurrency(r.data.currency);
+    }).catch(() => {});
   }, [user?.restaurant_id]);
 
   useEffect(() => {
