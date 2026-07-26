@@ -25,6 +25,9 @@ function getCurrentRestaurantId(): string | undefined {
       return JSON.parse(pendingInfo).restaurant_id;
     } catch {}
   }
+  const params = new URLSearchParams(window.location.search);
+  const fromQuery = params.get('restaurantId');
+  if (fromQuery) return fromQuery;
   return undefined;
 }
 

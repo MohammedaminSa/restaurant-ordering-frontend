@@ -152,7 +152,7 @@ function DashboardLayout() {
 
       <div className="shrink-0 border-t border-white/15 p-3">
         <Link
-          to="/"
+          to={user?.restaurant_id ? `/?restaurantId=${user.restaurant_id}` : "/"}
           onClick={() => setSidebarOpen(false)}
           className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-white/70 transition-colors hover:bg-white/15 hover:text-white"
         >
