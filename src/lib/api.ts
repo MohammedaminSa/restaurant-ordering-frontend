@@ -60,18 +60,21 @@ const api: AxiosInstance = axios.create({
   },
 });
 
-// Request interceptor - add auth token
+// Request interceptor - add auth token (only for non-public endpoints)
+const PUBLIC_PREFIXES = ['/restaurants/public', '/tables/scan'];
 api.interceptors.request.use(
   (config) => {
-    // Try auth store first, then fallback to legacy localStorage keys
-    const stored = localStorage.getItem('bistro-auth-v1');
-    let token: string | null = null;
-    if (stored) {
-      try { token = JSON.parse(stored).state?.accessToken; } catch {}
-    }
-    if (!token) token = localStorage.getItem('accessToken');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+    const isPublic = PUBLIC_PREFIXES.some(p => config.url?.includes(p));
+    if (!isPublic) {
+      const stored = localStorage.getItem('bistro-auth-v1');
+      let token: string | null = null;
+      if (stored) {
+        try { token = JSON.parse(stored).state?.accessToken; } catch {}
+      }
+      if (!token) token = localStorage.getItem('accessToken');
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
     }
     return config;
   },
