@@ -16,6 +16,7 @@ function OrdersPage() {
   const sessionToken = localStorage.getItem("sessionToken");
   const sessionDataStr = localStorage.getItem("sessionData");
   const sessionData = sessionDataStr ? JSON.parse(sessionDataStr) : null;
+  const ordersRestaurantId = sessionData?.restaurant_id;
   const hasPendingOrder = localStorage.getItem("pendingOrder") === "true";
 
   // Poll session status to detect when cashier completes the bill
@@ -80,7 +81,7 @@ function OrdersPage() {
   if (!sessionToken) {
     return (
       <div className="min-h-screen bg-background">
-        <SiteHeader />
+        <SiteHeader restaurantId={ordersRestaurantId} />
         <div className="flex items-center justify-center px-4 py-24">
           <div className="max-w-md rounded-xl border border-border bg-card p-12 text-center">
             <Package className="mx-auto h-16 w-16 text-muted-foreground mb-4" />
@@ -102,7 +103,7 @@ function OrdersPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <SiteHeader />
+      <SiteHeader restaurantId={ordersRestaurantId} />
 
       <div className="mx-auto max-w-4xl px-4 py-8">
         {/* Header */}

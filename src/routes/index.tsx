@@ -65,7 +65,7 @@ function Menu() {
 
   return (
     <div className="min-h-screen">
-      <SiteHeader />
+      <SiteHeader restaurantId={restaurantId} />
 
       {/* Session status banner */}
       {sessionToken && sessionData ? (

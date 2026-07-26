@@ -104,6 +104,7 @@ function CartPage() {
 
   // Calculate tax and service charge
   const restaurantInfo = sessionData || pendingTableInfo;
+  const cartRestaurantId = restaurantInfo?.restaurant_id;
   const taxRate = restaurantInfo?.tax_rate || 8.5;
   const serviceChargeRate = restaurantInfo?.service_charge_rate || 10;
   const currency = restaurantInfo?.currency;
@@ -219,7 +220,7 @@ function CartPage() {
   if (items.length === 0 && step !== 'confirmation') {
     return (
       <div className="min-h-screen bg-background">
-        <SiteHeader />
+        <SiteHeader restaurantId={cartRestaurantId} />
         <div className="mx-auto max-w-2xl px-4 py-8">
           <div className="rounded-xl border border-border bg-card p-12 text-center">
             <ShoppingBag className="mx-auto h-20 w-20 text-muted-foreground mb-4" />
@@ -243,7 +244,7 @@ function CartPage() {
   if (!sessionData && !pendingTableInfo && step !== 'confirmation') {
     return (
       <div className="min-h-screen bg-background">
-        <SiteHeader />
+        <SiteHeader restaurantId={cartRestaurantId} />
         <div className="mx-auto max-w-2xl px-4 py-8">
           <div className="rounded-xl border border-red-200 bg-red-50 p-4 mb-4">
             <p className="text-sm text-red-800">
@@ -281,7 +282,7 @@ function CartPage() {
     if (paymentApproved) {
       return (
         <div className="min-h-screen bg-background">
-          <SiteHeader />
+          <SiteHeader restaurantId={cartRestaurantId} />
           <div className="mx-auto max-w-lg px-4 py-16 text-center">
             <div className="rounded-full bg-green-100 p-4 w-24 h-24 mx-auto mb-6 flex items-center justify-center">
               <CheckCircle className="h-12 w-12 text-green-600" />
@@ -303,7 +304,7 @@ function CartPage() {
     if (paymentRejected) {
       return (
         <div className="min-h-screen bg-background">
-          <SiteHeader />
+          <SiteHeader restaurantId={cartRestaurantId} />
           <div className="mx-auto max-w-lg px-4 py-16 text-center">
             <div className="rounded-full bg-red-100 p-4 w-24 h-24 mx-auto mb-6 flex items-center justify-center">
               <XCircle className="h-12 w-12 text-red-600" />
@@ -334,7 +335,7 @@ function CartPage() {
     // Still pending
     return (
       <div className="min-h-screen bg-background">
-        <SiteHeader />
+        <SiteHeader restaurantId={cartRestaurantId} />
         <div className="mx-auto max-w-lg px-4 py-16 text-center">
           <div className="rounded-full bg-amber-100 p-4 w-24 h-24 mx-auto mb-6 flex items-center justify-center">
             <Timer className="h-12 w-12 text-amber-600 animate-pulse" />
@@ -371,7 +372,7 @@ function CartPage() {
   if (step === 'payment-details') {
     return (
       <div className="min-h-screen bg-background">
-        <SiteHeader />
+        <SiteHeader restaurantId={cartRestaurantId} />
         <div className="mx-auto max-w-lg px-4 py-8">
           <button
             onClick={() => setStep('payment-method')}
@@ -531,7 +532,7 @@ function CartPage() {
 
     return (
       <div className="min-h-screen bg-background">
-        <SiteHeader />
+        <SiteHeader restaurantId={cartRestaurantId} />
         <div className="mx-auto max-w-lg px-4 py-12">
           <button
             onClick={() => setStep('checkout')}
@@ -684,7 +685,7 @@ function CartPage() {
   // =========================================================
   return (
     <div className="min-h-screen bg-background">
-      <SiteHeader />
+      <SiteHeader restaurantId={cartRestaurantId} />
 
       <div className="mx-auto max-w-3xl px-4 py-6">
         {/* Header */}

@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import { useState, useRef, useEffect, useCallback } from "react";
 import { ThemeToggle } from "@/components/theme-toggle";
 
-export function SiteHeader() {
+export function SiteHeader({ restaurantId: propRestaurantId }: { restaurantId?: string } = {}) {
   const navigate = useNavigate();
   const { count } = useCart();
   const { user, isAuthenticated, logout } = useAuthStore();
@@ -15,25 +15,15 @@ export function SiteHeader() {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [restaurant, setRestaurant] = useState<RestaurantInfo | null>(null);
   const tapCountRef = useRef(0);
-
-  function getCurrentRestaurantId(): string | undefined {
-    const sessionDataStr = localStorage.getItem('sessionData');
-    if (sessionDataStr) {
-      try { return JSON.parse(sessionDataStr).restaurant_id; } catch {}
-    }
-    const pendingInfo = localStorage.getItem('pendingTableInfo');
-    if (pendingInfo) {
-      try { return JSON.parse(pendingInfo).restaurant_id; } catch {}
-    }
-    return undefined;
-  }
   const tapTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const rid = getCurrentRestaurantId();
-    getRestaurantInfo(rid).then(r => setRestaurant(r.data)).catch(() => {});
-  }, []);
+    const rid = user?.restaurant_id || propRestaurantId;
+    if (rid) {
+      getRestaurantInfo(rid).then(r => setRestaurant(r.data)).catch(() => {});
+    }
+  }, [user?.restaurant_id, propRestaurantId]);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
