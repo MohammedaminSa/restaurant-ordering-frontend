@@ -84,8 +84,9 @@ function DashboardLayout() {
   const [restaurantName, setRestaurantName] = useState("Restaurant");
 
   useEffect(() => {
-    getRestaurantInfo().then(r => setRestaurantName(r.data?.name || 'Restaurant')).catch(() => {});
-  }, []);
+    const rid = user?.restaurant_id;
+    getRestaurantInfo(rid).then(r => setRestaurantName(r.data?.name || 'Restaurant')).catch(() => {});
+  }, [user?.restaurant_id]);
 
   useEffect(() => {
     if (!isAuthenticated || !user) {
