@@ -1094,11 +1094,54 @@ export interface RestaurantInfo {
   settings?: Record<string, any>;
 }
 
+function readLocalRestaurantInfo(restaurantId?: string): { name: string; currency: string; logo_url?: string; tax_rate: number; service_charge_rate: number } | null {
+  const raw = localStorage.getItem('pendingTableInfo');
+  if (raw) {
+    try {
+      const info = JSON.parse(raw);
+      if (!restaurantId || info.restaurant_id === restaurantId) {
+        return {
+          name: info.restaurant_name,
+          currency: info.currency,
+          logo_url: info.restaurant_logo,
+          tax_rate: info.tax_rate,
+          service_charge_rate: info.service_charge_rate,
+        };
+      }
+    } catch {}
+  }
+  const sessionRaw = localStorage.getItem('sessionData');
+  if (sessionRaw) {
+    try {
+      const info = JSON.parse(sessionRaw);
+      if (!restaurantId || info.restaurant_id === restaurantId) {
+        return {
+          name: info.restaurant_name,
+          currency: info.currency,
+          logo_url: info.restaurant_logo,
+          tax_rate: info.tax_rate,
+          service_charge_rate: info.service_charge_rate,
+        };
+      }
+    } catch {}
+  }
+  return null;
+}
+
 export const getRestaurantInfo = async (restaurantId?: string): Promise<ApiResponse<RestaurantInfo>> => {
+  // Prefer local data if available — avoids unnecessary network calls
+  const local = readLocalRestaurantInfo(restaurantId);
+  if (local) {
+    return { success: true, data: { id: restaurantId || '', ...local } };
+  }
   const params: Record<string, any> = { t: Date.now() };
   if (restaurantId) params.restaurantId = restaurantId;
-  const response = await publicApi.get('/restaurants/public/info', { params });
-  return response.data;
+  try {
+    const response = await publicApi.get('/restaurants/public/info', { params });
+    return response.data;
+  } catch {
+    throw new Error('Failed to fetch restaurant info');
+  }
 };
 
 /**

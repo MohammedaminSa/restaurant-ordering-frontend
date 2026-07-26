@@ -49,7 +49,7 @@ async function loadMenu() {
 function Menu() {
   const { data, isLoading } = useQuery({ queryKey: ["menu"], queryFn: loadMenu });
   const restaurantId = getCurrentRestaurantId();
-  const { data: restaurant } = useQuery({ queryKey: ["restaurant-info", restaurantId], queryFn: () => getRestaurantInfo(restaurantId), refetchInterval: 5000, refetchIntervalInBackground: true, staleTime: 0 });
+  const { data: restaurant } = useQuery({ queryKey: ["restaurant-info", restaurantId], queryFn: () => getRestaurantInfo(restaurantId), staleTime: Infinity });
   const [active, setActive] = useState<string | null>(null);
   const { add } = useCart();
   const sessionToken = localStorage.getItem("sessionToken");
