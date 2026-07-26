@@ -15,11 +15,24 @@ export function SiteHeader() {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [restaurant, setRestaurant] = useState<RestaurantInfo | null>(null);
   const tapCountRef = useRef(0);
+
+  function getCurrentRestaurantId(): string | undefined {
+    const sessionDataStr = localStorage.getItem('sessionData');
+    if (sessionDataStr) {
+      try { return JSON.parse(sessionDataStr).restaurant_id; } catch {}
+    }
+    const pendingInfo = localStorage.getItem('pendingTableInfo');
+    if (pendingInfo) {
+      try { return JSON.parse(pendingInfo).restaurant_id; } catch {}
+    }
+    return undefined;
+  }
   const tapTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    getRestaurantInfo().then(r => setRestaurant(r.data)).catch(() => {});
+    const rid = getCurrentRestaurantId();
+    getRestaurantInfo(rid).then(r => setRestaurant(r.data)).catch(() => {});
   }, []);
 
   useEffect(() => {
