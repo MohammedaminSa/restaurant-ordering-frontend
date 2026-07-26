@@ -12,10 +12,27 @@ export const Route = createFileRoute("/")({
   component: Menu,
 });
 
+function getCurrentRestaurantId(): string | undefined {
+  const sessionDataStr = localStorage.getItem("sessionData");
+  if (sessionDataStr) {
+    try {
+      return JSON.parse(sessionDataStr).restaurant_id;
+    } catch {}
+  }
+  const pendingInfo = localStorage.getItem("pendingTableInfo");
+  if (pendingInfo) {
+    try {
+      return JSON.parse(pendingInfo).restaurant_id;
+    } catch {}
+  }
+  return undefined;
+}
+
 async function loadMenu() {
+  const restaurantId = getCurrentRestaurantId();
   const [catsRes, itemsRes] = await Promise.all([
-    getCategories(),
-    getMenuItems({ isAvailable: true }),
+    getCategories(restaurantId),
+    getMenuItems({ isAvailable: true, restaurantId }),
   ]);
   return { 
     categories: catsRes.data as Category[], 
@@ -25,7 +42,8 @@ async function loadMenu() {
 
 function Menu() {
   const { data, isLoading } = useQuery({ queryKey: ["menu"], queryFn: loadMenu });
-  const { data: restaurant } = useQuery({ queryKey: ["restaurant-info"], queryFn: getRestaurantInfo, refetchInterval: 5000, refetchIntervalInBackground: true, staleTime: 0 });
+  const restaurantId = getCurrentRestaurantId();
+  const { data: restaurant } = useQuery({ queryKey: ["restaurant-info", restaurantId], queryFn: () => getRestaurantInfo(restaurantId), refetchInterval: 5000, refetchIntervalInBackground: true, staleTime: 0 });
   const [active, setActive] = useState<string | null>(null);
   const { add } = useCart();
   const sessionToken = localStorage.getItem("sessionToken");

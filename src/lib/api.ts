@@ -1079,10 +1079,10 @@ export interface RestaurantInfo {
   settings?: Record<string, any>;
 }
 
-export const getRestaurantInfo = async (): Promise<ApiResponse<RestaurantInfo>> => {
-  const response = await api.get('/restaurants/public/info', {
-    params: { t: Date.now() },
-  });
+export const getRestaurantInfo = async (restaurantId?: string): Promise<ApiResponse<RestaurantInfo>> => {
+  const params: Record<string, any> = { t: Date.now() };
+  if (restaurantId) params.restaurantId = restaurantId;
+  const response = await api.get('/restaurants/public/info', { params });
   return response.data;
 };
 

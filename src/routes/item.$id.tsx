@@ -11,6 +11,22 @@ export const Route = createFileRoute("/item/$id")({
   component: ItemDetail,
 });
 
+function getCurrentRestaurantId(): string | undefined {
+  const sessionDataStr = localStorage.getItem("sessionData");
+  if (sessionDataStr) {
+    try {
+      return JSON.parse(sessionDataStr).restaurant_id;
+    } catch {}
+  }
+  const pendingInfo = localStorage.getItem("pendingTableInfo");
+  if (pendingInfo) {
+    try {
+      return JSON.parse(pendingInfo).restaurant_id;
+    } catch {}
+  }
+  return undefined;
+}
+
 function ItemDetail() {
   const { id } = Route.useParams();
   const navigate = useNavigate();
@@ -23,9 +39,10 @@ function ItemDetail() {
     queryFn: () => getMenuItemById(id),
   });
 
+  const restaurantId = getCurrentRestaurantId();
   const { data: restaurant } = useQuery({
-    queryKey: ["restaurant-info"],
-    queryFn: getRestaurantInfo,
+    queryKey: ["restaurant-info", restaurantId],
+    queryFn: () => getRestaurantInfo(restaurantId),
   });
 
   const menuItem = data?.data;
