@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
-import { getCategories, getMenuItems, getRestaurantInfo, type Category, type MenuItem, type HeroSettings } from "@/lib/api";
+import { useState, useEffect } from "react";
+import { getCategories, getMenuItems, getRestaurantInfo, getSessionByToken, type Category, type MenuItem, type HeroSettings } from "@/lib/api";
 import { SiteHeader } from "@/components/site-header";
 import { useCart, fmt } from "@/lib/cart";
 import { toast } from "sonner";
@@ -49,6 +49,29 @@ function Menu() {
   const sessionToken = localStorage.getItem("sessionToken");
   const sessionDataStr = localStorage.getItem("sessionData");
   const sessionData = sessionDataStr ? JSON.parse(sessionDataStr) : null;
+
+  // Verify stored session is still valid on the server
+  useEffect(() => {
+    if (!sessionToken) return;
+    getSessionByToken(sessionToken)
+      .then((res) => {
+        if (res.data?.status === 'completed') {
+          localStorage.removeItem('sessionToken');
+          localStorage.removeItem('sessionData');
+          localStorage.removeItem('pendingTableInfo');
+          localStorage.removeItem('pendingOrder');
+          localStorage.removeItem('bistro-cart-v1');
+        }
+      })
+      .catch(() => {
+        // Session not found or expired — clear stale data
+        localStorage.removeItem('sessionToken');
+        localStorage.removeItem('sessionData');
+        localStorage.removeItem('pendingTableInfo');
+        localStorage.removeItem('pendingOrder');
+        localStorage.removeItem('bistro-cart-v1');
+      });
+  }, []);
 
   const categories = data?.categories ?? [];
   const menuItems = data?.items ?? [];
