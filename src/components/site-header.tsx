@@ -1,5 +1,5 @@
-import { Link } from "@tanstack/react-router";
-import { ShoppingBag, UtensilsCrossed, LayoutDashboard, LogOut, UserIcon, ChevronDown, Menu, X, Lock } from "lucide-react";
+import { Link, useNavigate } from "@tanstack/react-router";
+import { ShoppingBag, UtensilsCrossed, LayoutDashboard, LogOut, UserIcon, ChevronDown, Menu, X } from "lucide-react";
 import { useCart } from "@/lib/cart";
 import { useAuthStore } from "@/lib/auth-store";
 import { ROLE_LABELS, ROLE_DASHBOARD, getRestaurantInfo, type User, type RestaurantInfo } from "@/lib/api";
@@ -8,12 +8,12 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { ThemeToggle } from "@/components/theme-toggle";
 
 export function SiteHeader() {
+  const navigate = useNavigate();
   const { count } = useCart();
   const { user, isAuthenticated, logout } = useAuthStore();
   const [menuOpen, setMenuOpen] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [restaurant, setRestaurant] = useState<RestaurantInfo | null>(null);
-  const [showStaffLogin, setShowStaffLogin] = useState(false);
   const tapCountRef = useRef(0);
   const tapTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -44,13 +44,13 @@ export function SiteHeader() {
     if (tapTimerRef.current) clearTimeout(tapTimerRef.current);
     if (tapCountRef.current >= 5) {
       tapCountRef.current = 0;
-      setShowStaffLogin(true);
+      navigate({ to: '/auth' });
       return;
     }
     tapTimerRef.current = setTimeout(() => {
       tapCountRef.current = 0;
     }, 3000);
-  }, []);
+  }, [navigate]);
 
   const displayName = restaurant?.name || 'Restaurant';
 
@@ -120,14 +120,6 @@ export function SiteHeader() {
                 </div>
               )}
             </div>
-          ) : showStaffLogin ? (
-            <Link
-              to="/auth"
-              className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
-            >
-              <Lock className="h-3.5 w-3.5" />
-              Staff Login
-            </Link>
           ) : null}
 
           <ThemeToggle />
@@ -204,15 +196,6 @@ export function SiteHeader() {
                   Sign Out
                 </button>
               </>
-            ) : showStaffLogin ? (
-              <Link
-                to="/auth"
-                onClick={() => { setMobileNavOpen(false); setShowStaffLogin(false); }}
-                className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground hover:bg-accent"
-              >
-                <Lock className="h-4 w-4" />
-                Staff Login
-              </Link>
             ) : null}
             <div className="pt-2 px-3">
               <ThemeToggle />

@@ -154,32 +154,7 @@ function AuthPage() {
           </button>
         </form>
 
-        <div className="mt-6 space-y-2 rounded-lg border border-border/60 bg-muted/50 p-3">
-          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-            Demo Accounts
-          </p>
-          <div className="space-y-1 text-xs text-muted-foreground">
-            {(
-              [
-                ["admin@restaurant.com", "Super Admin", "admin123"],
-                ["restaurant@demo.com", "Restaurant Admin", "admin123"],
-                ["kitchen@demo.com", "Kitchen Staff", "kitchen123"],
-                ["waiter@demo.com", "Waiter", "waiter123"],
-                ["cashier@demo.com", "Cashier", "cashier123"],
-              ] as const
-            ).map(([email, role, pw]) => (
-              <button
-                key={email}
-                type="button"
-                onClick={() => { setEmail(email); setPassword(pw); }}
-                className="block w-full text-left hover:text-foreground transition-colors"
-              >
-                <span className="font-mono text-[11px]">{email}</span>
-                <span className="ml-2 opacity-60">— {role}</span>
-              </button>
-            ))}
-          </div>
-        </div>
+
 
         <p className="mt-6 text-center text-xs text-muted-foreground">
           For customer orders, scan the QR code at your table

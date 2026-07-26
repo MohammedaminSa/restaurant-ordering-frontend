@@ -136,13 +136,14 @@ function SuperAdminUsers() {
       updateMutation.mutate({ id: editingUser.id, data: payload });
     } else {
       if (!form.password) { toast.error("Password is required for new users"); return; }
+      if (!form.restaurant_id) { toast.error("Please select a restaurant to assign this admin to"); return; }
       createMutation.mutate({
         name: form.name,
         email: form.email,
         password: form.password,
         role: "restaurant_admin",
         phone: form.phone || undefined,
-        restaurant_id: form.restaurant_id || undefined,
+        restaurant_id: form.restaurant_id,
       });
     }
   };
