@@ -30,6 +30,9 @@ function getCurrentRestaurantId(): string | undefined {
 
 async function loadMenu() {
   const restaurantId = getCurrentRestaurantId();
+  if (!restaurantId) {
+    return { categories: [], items: [] };
+  }
   const [catsRes, itemsRes] = await Promise.all([
     getCategories(restaurantId),
     getMenuItems({ isAvailable: true, restaurantId }),
