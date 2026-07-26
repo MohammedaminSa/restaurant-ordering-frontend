@@ -60,21 +60,26 @@ const api: AxiosInstance = axios.create({
   },
 });
 
-// Request interceptor - add auth token (only for non-public endpoints)
-const PUBLIC_PREFIXES = ['/restaurants/public', '/tables/scan'];
+// Public API instance — no auth headers, no response interceptors
+export const publicApi: AxiosInstance = axios.create({
+  baseURL: API_URL,
+  timeout: 10000,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+// Request interceptor - add auth token
 api.interceptors.request.use(
   (config) => {
-    const isPublic = PUBLIC_PREFIXES.some(p => config.url?.includes(p));
-    if (!isPublic) {
-      const stored = localStorage.getItem('bistro-auth-v1');
-      let token: string | null = null;
-      if (stored) {
-        try { token = JSON.parse(stored).state?.accessToken; } catch {}
-      }
-      if (!token) token = localStorage.getItem('accessToken');
-      if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
-      }
+    const stored = localStorage.getItem('bistro-auth-v1');
+    let token: string | null = null;
+    if (stored) {
+      try { token = JSON.parse(stored).state?.accessToken; } catch {}
+    }
+    if (!token) token = localStorage.getItem('accessToken');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
   },
@@ -83,12 +88,19 @@ api.interceptors.request.use(
   }
 );
 
-// Response interceptor - handle errors
+// Response interceptor - handle errors only on non-public paths
+const isPublicPath = (url?: string) =>
+  url?.includes('/restaurants/public') || url?.includes('/tables/scan');
+
 api.interceptors.response.use(
   (response: AxiosResponse) => {
     return response;
   },
   async (error: AxiosError) => {
+    if (isPublicPath(error.config?.url)) {
+      return Promise.reject(error);
+    }
+
     const originalRequest = error.config as any;
 
     // Handle 401 Unauthorized - try to refresh token
@@ -179,7 +191,7 @@ export interface TableInfo {
  * Get table information by QR code (Public)
  */
 export const getTableByQRCode = async (qrCode: string): Promise<ApiResponse<TableInfo>> => {
-  const response = await api.get(`/tables/scan/${qrCode}`);
+  const response = await publicApi.get(`/tables/scan/${qrCode}`);
   return response.data;
 };
 
@@ -1085,7 +1097,7 @@ export interface RestaurantInfo {
 export const getRestaurantInfo = async (restaurantId?: string): Promise<ApiResponse<RestaurantInfo>> => {
   const params: Record<string, any> = { t: Date.now() };
   if (restaurantId) params.restaurantId = restaurantId;
-  const response = await api.get('/restaurants/public/info', { params });
+  const response = await publicApi.get('/restaurants/public/info', { params });
   return response.data;
 };
 
