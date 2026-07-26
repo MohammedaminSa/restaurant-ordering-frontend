@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { getTableByQRCode, createSession, type TableInfo } from "@/lib/api";
 import { Loader2, Users, MapPin } from "lucide-react";
 import { toast } from "sonner";
+import { useCart } from "@/lib/cart";
 
 export const Route = createFileRoute("/scan/$qrCode")({
   component: QRScanPage,
@@ -11,6 +12,7 @@ export const Route = createFileRoute("/scan/$qrCode")({
 function QRScanPage() {
   const { qrCode } = Route.useParams();
   const navigate = useNavigate();
+  const { clear: clearCart } = useCart();
   const [loading, setLoading] = useState(true);
   const [tableInfo, setTableInfo] = useState<TableInfo | null>(null);
   const [showCustomerForm, setShowCustomerForm] = useState(false);
@@ -40,20 +42,21 @@ function QRScanPage() {
         }
         setLoading(false);
       } else {
-        // Check if user is switching tables
-        if (existingSessionToken) {
-          const savedTableData = localStorage.getItem("sessionData");
-          if (savedTableData) {
-            const oldSession = JSON.parse(savedTableData);
-            if (oldSession.table_id !== table.id) {
+        // Check if user is switching tables or restaurants
+        const oldTableData = localStorage.getItem("sessionData") || localStorage.getItem("pendingTableInfo");
+        if (oldTableData) {
+          try {
+            const oldData = JSON.parse(oldTableData);
+            const oldTableId = oldData.id || oldData.table_id;
+            if (oldTableId && oldTableId !== table.id) {
               // Clear old session/cart when switching tables
               localStorage.removeItem("sessionToken");
               localStorage.removeItem("sessionData");
               localStorage.removeItem("pendingTableInfo");
-              localStorage.removeItem("bistro-cart-v1");
+              clearCart();
               toast.info("Switched to a new table");
             }
-          }
+          } catch {}
         }
 
         // Table is available - show table info
@@ -72,7 +75,7 @@ function QRScanPage() {
     // Clear any stale session data before starting fresh
     localStorage.removeItem("sessionToken");
     localStorage.removeItem("sessionData");
-    localStorage.removeItem("bistro-cart-v1");
+    clearCart();
     
     // Store pending table info for later session creation
     localStorage.setItem("pendingTableInfo", JSON.stringify(tableInfo));
