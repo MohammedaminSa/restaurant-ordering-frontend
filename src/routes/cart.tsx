@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useCart, fmt } from "@/lib/cart";
+import { useCart, fmt, setDefaultCurrency } from "@/lib/cart";
 import { placeOrder, createSession, getSessionByToken, getSessionOrders, getSessionNotifications, type PaymentDetails } from "@/lib/api";
 import { toast } from "sonner";
 import { ShoppingBag, ArrowLeft, CheckCircle, Loader2, MapPin, User, Table as TableIcon, Trash2, Plus, Minus, Smartphone, Building2, Banknote, Wallet, Landmark, XCircle, Timer } from "lucide-react";
@@ -108,6 +108,7 @@ function CartPage() {
   const taxRate = restaurantInfo?.tax_rate || 8.5;
   const serviceChargeRate = restaurantInfo?.service_charge_rate || 10;
   const currency = restaurantInfo?.currency;
+  if (currency) setDefaultCurrency(currency);
   
   const subtotal = total;
   const tax = (subtotal * taxRate) / 100;

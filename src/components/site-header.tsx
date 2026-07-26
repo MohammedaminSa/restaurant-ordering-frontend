@@ -3,6 +3,7 @@ import { ShoppingBag, UtensilsCrossed, LayoutDashboard, LogOut, UserIcon, Chevro
 import { useCart } from "@/lib/cart";
 import { useAuthStore } from "@/lib/auth-store";
 import { ROLE_LABELS, ROLE_DASHBOARD, getRestaurantInfo, type User, type RestaurantInfo } from "@/lib/api";
+import { setDefaultCurrency } from "@/lib/cart";
 import { toast } from "sonner";
 import { useState, useRef, useEffect, useCallback } from "react";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -21,7 +22,10 @@ export function SiteHeader({ restaurantId: propRestaurantId }: { restaurantId?: 
   useEffect(() => {
     const rid = user?.restaurant_id || propRestaurantId;
     if (rid) {
-      getRestaurantInfo(rid).then(r => setRestaurant(r.data)).catch(() => {});
+      getRestaurantInfo(rid).then(r => {
+        setRestaurant(r.data);
+        if (r.data?.currency) setDefaultCurrency(r.data.currency);
+      }).catch(() => {});
     }
   }, [user?.restaurant_id, propRestaurantId]);
 
