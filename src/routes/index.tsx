@@ -14,6 +14,7 @@ export const Route = createFileRoute("/")({
 });
 
 function getCurrentRestaurantId(): string | undefined {
+  if (typeof window === 'undefined') return undefined;
   const sessionDataStr = localStorage.getItem("sessionData");
   if (sessionDataStr) {
     try {
@@ -51,14 +52,20 @@ async function loadMenu() {
 
 function Menu() {
   const { user, isAuthenticated } = useAuthStore(s => ({ user: s.user, isAuthenticated: s.isAuthenticated }));
-  const restaurantId = getCurrentRestaurantId() || user?.restaurant_id;
+  const [mounted, setMounted] = useState(false);
+  const [sessionToken, setSessionToken] = useState<string | null>(null);
+  const [sessionData, setSessionData] = useState<any>(null);
+  useEffect(() => {
+    setMounted(true);
+    setSessionToken(localStorage.getItem("sessionToken"));
+    const raw = localStorage.getItem("sessionData");
+    if (raw) try { setSessionData(JSON.parse(raw)); } catch {}
+  }, []);
+  const restaurantId = mounted ? (getCurrentRestaurantId() || user?.restaurant_id) : undefined;
   const { data, isLoading } = useQuery({ queryKey: ["menu", restaurantId], queryFn: loadMenu });
   const { data: restaurant } = useQuery({ queryKey: ["restaurant-info", restaurantId], queryFn: () => isAuthenticated && user?.restaurant_id ? getMyRestaurant() : getRestaurantInfo(restaurantId), staleTime: Infinity });
   const [active, setActive] = useState<string | null>(null);
   const { add } = useCart();
-  const sessionToken = localStorage.getItem("sessionToken");
-  const sessionDataStr = localStorage.getItem("sessionData");
-  const sessionData = sessionDataStr ? JSON.parse(sessionDataStr) : null;
 
   // Cache staff restaurant info in localStorage so subsequent loads work like QR code flow
   useEffect(() => {

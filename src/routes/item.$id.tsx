@@ -13,6 +13,7 @@ export const Route = createFileRoute("/item/$id")({
 });
 
 function getCurrentRestaurantId(): string | undefined {
+  if (typeof window === 'undefined') return undefined;
   const sessionDataStr = localStorage.getItem("sessionData");
   if (sessionDataStr) {
     try {
@@ -39,6 +40,8 @@ function ItemDetail() {
   const { add } = useCart();
   const [qty, setQty] = useState(1);
   const [specialInstructions, setSpecialInstructions] = useState("");
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
   const { user, isAuthenticated } = useAuthStore(s => ({ user: s.user, isAuthenticated: s.isAuthenticated }));
 
   const { data, isLoading, error } = useQuery({
@@ -46,7 +49,7 @@ function ItemDetail() {
     queryFn: () => getMenuItemById(id),
   });
 
-  const restaurantId = getCurrentRestaurantId() || user?.restaurant_id;
+  const restaurantId = mounted ? (getCurrentRestaurantId() || user?.restaurant_id) : undefined;
   const { data: restaurant } = useQuery({
     queryKey: ["restaurant-info", restaurantId],
     queryFn: () => isAuthenticated && user?.restaurant_id ? getMyRestaurant() : getRestaurantInfo(restaurantId),

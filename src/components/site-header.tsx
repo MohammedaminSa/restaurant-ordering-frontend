@@ -12,6 +12,8 @@ export function SiteHeader({ restaurantId: propRestaurantId }: { restaurantId?: 
   const navigate = useNavigate();
   const { count } = useCart();
   const { user, isAuthenticated, logout } = useAuthStore();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
   const [menuOpen, setMenuOpen] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [restaurant, setRestaurant] = useState<RestaurantInfo | null>(null);
@@ -103,7 +105,7 @@ export function SiteHeader({ restaurantId: propRestaurantId }: { restaurantId?: 
             Orders
           </Link>
 
-          {isAuthenticated && user ? (
+          {mounted && isAuthenticated && user ? (
             <div className="relative" ref={menuRef}>
               <button
                 onClick={() => setMenuOpen(!menuOpen)}
@@ -190,7 +192,7 @@ export function SiteHeader({ restaurantId: propRestaurantId }: { restaurantId?: 
             >
               Orders
             </Link>
-            {isAuthenticated && user ? (
+            {mounted && isAuthenticated && user ? (
               <>
                 <div className="border-t border-border my-2" />
                 <div className="px-3 py-2">
