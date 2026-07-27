@@ -39,13 +39,14 @@ function ItemDetail() {
   const { add } = useCart();
   const [qty, setQty] = useState(1);
   const [specialInstructions, setSpecialInstructions] = useState("");
+  const user = useAuthStore(s => s.user);
 
   const { data, isLoading, error } = useQuery({
     queryKey: ["menu-item", id],
     queryFn: () => getMenuItemById(id),
   });
 
-  const restaurantId = getCurrentRestaurantId();
+  const restaurantId = getCurrentRestaurantId() || user?.restaurant_id;
   const { data: restaurant } = useQuery({
     queryKey: ["restaurant-info", restaurantId],
     queryFn: () => getRestaurantInfo(restaurantId),

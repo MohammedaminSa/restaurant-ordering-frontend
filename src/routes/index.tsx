@@ -50,8 +50,9 @@ async function loadMenu() {
 }
 
 function Menu() {
-  const { data, isLoading } = useQuery({ queryKey: ["menu"], queryFn: loadMenu });
-  const restaurantId = getCurrentRestaurantId();
+  const user = useAuthStore(s => s.user);
+  const restaurantId = getCurrentRestaurantId() || user?.restaurant_id;
+  const { data, isLoading } = useQuery({ queryKey: ["menu", restaurantId], queryFn: loadMenu });
   const { data: restaurant } = useQuery({ queryKey: ["restaurant-info", restaurantId], queryFn: () => getRestaurantInfo(restaurantId), staleTime: Infinity });
   const [active, setActive] = useState<string | null>(null);
   const { add } = useCart();
