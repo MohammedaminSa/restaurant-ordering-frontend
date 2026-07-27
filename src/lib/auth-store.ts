@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { User } from './api';
-import { login as apiLogin, logout as apiLogout, refreshToken as apiRefreshToken } from './api';
+import { login as apiLogin, logout as apiLogout, refreshToken as apiRefreshToken, clearStaffRestaurantCache } from './api';
 
 interface AuthState {
   user: User | null;
@@ -41,6 +41,7 @@ export const useAuthStore = create<AuthState>()(
         } catch {
           // Logout on client even if API call fails
         }
+        clearStaffRestaurantCache();
         set({
           user: null,
           accessToken: null,

@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
-import { getCategories, getMenuItems, getRestaurantInfo, getSessionByToken, type Category, type MenuItem, type HeroSettings } from "@/lib/api";
+import { getCategories, getMenuItems, getRestaurantInfo, getMyRestaurant, cacheStaffRestaurant, getSessionByToken, type Category, type MenuItem, type HeroSettings } from "@/lib/api";
 import { SiteHeader } from "@/components/site-header";
 import { useAuthStore } from "@/lib/auth-store";
 import { useCart, fmt } from "@/lib/cart";
@@ -50,15 +50,30 @@ async function loadMenu() {
 }
 
 function Menu() {
-  const user = useAuthStore(s => s.user);
+  const { user, isAuthenticated } = useAuthStore(s => ({ user: s.user, isAuthenticated: s.isAuthenticated }));
   const restaurantId = getCurrentRestaurantId() || user?.restaurant_id;
   const { data, isLoading } = useQuery({ queryKey: ["menu", restaurantId], queryFn: loadMenu });
-  const { data: restaurant } = useQuery({ queryKey: ["restaurant-info", restaurantId], queryFn: () => getRestaurantInfo(restaurantId), staleTime: Infinity });
+  const { data: restaurant } = useQuery({ queryKey: ["restaurant-info", restaurantId], queryFn: () => isAuthenticated && user?.restaurant_id ? getMyRestaurant() : getRestaurantInfo(restaurantId), staleTime: Infinity });
   const [active, setActive] = useState<string | null>(null);
   const { add } = useCart();
   const sessionToken = localStorage.getItem("sessionToken");
   const sessionDataStr = localStorage.getItem("sessionData");
   const sessionData = sessionDataStr ? JSON.parse(sessionDataStr) : null;
+
+  // Cache staff restaurant info in localStorage so subsequent loads work like QR code flow
+  useEffect(() => {
+    if (isAuthenticated && user?.restaurant_id && restaurant?.data) {
+      const d = restaurant.data;
+      cacheStaffRestaurant({
+        restaurant_id: d.id,
+        name: d.name,
+        currency: d.currency,
+        logo_url: d.logo_url,
+        tax_rate: d.tax_rate,
+        service_charge_rate: d.service_charge_rate,
+      });
+    }
+  }, [isAuthenticated, user?.restaurant_id, restaurant]);
 
   // Verify stored session is still valid on the server
   useEffect(() => {

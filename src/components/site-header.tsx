@@ -2,7 +2,7 @@ import { Link, useNavigate } from "@tanstack/react-router";
 import { ShoppingBag, UtensilsCrossed, LayoutDashboard, LogOut, UserIcon, ChevronDown, Menu, X } from "lucide-react";
 import { useCart } from "@/lib/cart";
 import { useAuthStore } from "@/lib/auth-store";
-import { ROLE_LABELS, ROLE_DASHBOARD, getRestaurantInfo, type User, type RestaurantInfo } from "@/lib/api";
+import { ROLE_LABELS, ROLE_DASHBOARD, getRestaurantInfo, getMyRestaurant, cacheStaffRestaurant, type User, type RestaurantInfo } from "@/lib/api";
 import { setDefaultCurrency } from "@/lib/cart";
 import { toast } from "sonner";
 import { useState, useRef, useEffect, useCallback } from "react";
@@ -20,14 +20,26 @@ export function SiteHeader({ restaurantId: propRestaurantId }: { restaurantId?: 
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const rid = user?.restaurant_id || propRestaurantId;
-    if (rid) {
-      getRestaurantInfo(rid).then(r => {
+    if (isAuthenticated && user?.restaurant_id) {
+      getMyRestaurant().then(r => {
+        setRestaurant(r.data);
+        if (r.data?.currency) setDefaultCurrency(r.data.currency);
+        cacheStaffRestaurant({
+          restaurant_id: r.data.id,
+          name: r.data.name,
+          currency: r.data.currency,
+          logo_url: r.data.logo_url,
+          tax_rate: r.data.tax_rate,
+          service_charge_rate: r.data.service_charge_rate,
+        });
+      }).catch(() => {});
+    } else if (propRestaurantId) {
+      getRestaurantInfo(propRestaurantId).then(r => {
         setRestaurant(r.data);
         if (r.data?.currency) setDefaultCurrency(r.data.currency);
       }).catch(() => {});
     }
-  }, [user?.restaurant_id, propRestaurantId]);
+  }, [isAuthenticated, user?.restaurant_id, propRestaurantId]);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {

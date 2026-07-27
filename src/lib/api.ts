@@ -1094,6 +1094,14 @@ export interface RestaurantInfo {
   settings?: Record<string, any>;
 }
 
+export function cacheStaffRestaurant(info: { restaurant_id: string; name: string; currency: string; logo_url?: string; tax_rate: number; service_charge_rate: number }) {
+  localStorage.setItem('staffRestaurantInfo', JSON.stringify(info));
+}
+
+export function clearStaffRestaurantCache() {
+  localStorage.removeItem('staffRestaurantInfo');
+}
+
 function readLocalRestaurantInfo(restaurantId?: string): { name: string; currency: string; logo_url?: string; tax_rate: number; service_charge_rate: number } | null {
   const raw = localStorage.getItem('pendingTableInfo');
   if (raw) {
@@ -1125,6 +1133,21 @@ function readLocalRestaurantInfo(restaurantId?: string): { name: string; currenc
       }
     } catch {}
   }
+  const staffRaw = localStorage.getItem('staffRestaurantInfo');
+  if (staffRaw) {
+    try {
+      const info = JSON.parse(staffRaw);
+      if (!restaurantId || info.restaurant_id === restaurantId) {
+        return {
+          name: info.name,
+          currency: info.currency,
+          logo_url: info.logo_url,
+          tax_rate: info.tax_rate,
+          service_charge_rate: info.service_charge_rate,
+        };
+      }
+    } catch {}
+  }
   return null;
 }
 
@@ -1134,18 +1157,6 @@ export const getRestaurantInfo = async (restaurantId?: string): Promise<ApiRespo
   if (local) {
     return { success: true, data: { id: restaurantId || '', ...local } };
   }
-
-  // If user is authenticated, use /my endpoint which resolves restaurantId from JWT
-  const authUser = useAuthStore.getState().user;
-  if (authUser?.restaurant_id) {
-    try {
-      const response = await api.get('/restaurants/my');
-      return { success: true, data: response.data.data as RestaurantInfo };
-    } catch {
-      // Fall through to public API
-    }
-  }
-
   const params: Record<string, any> = { t: Date.now() };
   if (restaurantId) params.restaurantId = restaurantId;
   try {

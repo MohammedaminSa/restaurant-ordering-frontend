@@ -1,12 +1,12 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { getMenuItemById, getRestaurantInfo } from "@/lib/api";
+import { getMenuItemById, getRestaurantInfo, getMyRestaurant, cacheStaffRestaurant } from "@/lib/api";
 import { SiteHeader } from "@/components/site-header";
 import { useAuthStore } from "@/lib/auth-store";
 import { useCart, fmt } from "@/lib/cart";
 import { toast } from "sonner";
 import { ArrowLeft, Clock, Plus, Minus, ChefHat, Check, ImageOff } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 export const Route = createFileRoute("/item/$id")({
   component: ItemDetail,
@@ -39,7 +39,7 @@ function ItemDetail() {
   const { add } = useCart();
   const [qty, setQty] = useState(1);
   const [specialInstructions, setSpecialInstructions] = useState("");
-  const user = useAuthStore(s => s.user);
+  const { user, isAuthenticated } = useAuthStore(s => ({ user: s.user, isAuthenticated: s.isAuthenticated }));
 
   const { data, isLoading, error } = useQuery({
     queryKey: ["menu-item", id],
@@ -49,8 +49,23 @@ function ItemDetail() {
   const restaurantId = getCurrentRestaurantId() || user?.restaurant_id;
   const { data: restaurant } = useQuery({
     queryKey: ["restaurant-info", restaurantId],
-    queryFn: () => getRestaurantInfo(restaurantId),
+    queryFn: () => isAuthenticated && user?.restaurant_id ? getMyRestaurant() : getRestaurantInfo(restaurantId),
   });
+
+  // Cache staff restaurant info in localStorage so subsequent loads work like QR code flow
+  useEffect(() => {
+    if (isAuthenticated && user?.restaurant_id && restaurant?.data) {
+      const d = restaurant.data;
+      cacheStaffRestaurant({
+        restaurant_id: d.id,
+        name: d.name,
+        currency: d.currency,
+        logo_url: d.logo_url,
+        tax_rate: d.tax_rate,
+        service_charge_rate: d.service_charge_rate,
+      });
+    }
+  }, [isAuthenticated, user?.restaurant_id, restaurant]);
 
   const menuItem = data?.data;
   const currency = restaurant?.data?.currency;
