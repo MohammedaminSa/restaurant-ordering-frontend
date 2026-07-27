@@ -81,6 +81,8 @@ const navItems: NavItem[] = [
 function DashboardLayout() {
   const { user, isAuthenticated, logout } = useAuthStore();
   const navigate = useNavigate();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [restaurantName, setRestaurantName] = useState("Restaurant");
 
@@ -102,7 +104,7 @@ function DashboardLayout() {
     setSidebarOpen(false);
   }, []);
 
-  if (!user) {
+  if (!mounted || !user) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
         <Loader2 className="h-8 w-8 animate-spin text-accent" />

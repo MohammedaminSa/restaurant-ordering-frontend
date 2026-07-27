@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useAuthStore } from "@/lib/auth-store";
 import { useQuery } from "@tanstack/react-query";
+import { useState, useEffect } from "react";
 import { getMenuItems, getCategories, getKitchenOrders, getTables, type User, type MenuItem, type Category, type PlacedOrder, type WaiterTable } from "@/lib/api";
 import { ROLE_LABELS } from "@/lib/api";
 import { fmt } from "@/lib/cart";
@@ -43,8 +44,10 @@ const roleCards = [
 ];
 
 function DashboardHome() {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
   const user = useAuthStore((s) => s.user);
-  if (!user) return null;
+  if (!mounted || !user) return null;
 
   const userRole = user.role as User['role'];
   const isAdmin = userRole === "super_admin" || userRole === "restaurant_admin";
