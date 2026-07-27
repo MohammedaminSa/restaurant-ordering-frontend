@@ -33,10 +33,17 @@ function AuthPage() {
     getRestaurantInfo(rid).then(r => setRestaurantName(r.data?.name || 'Restaurant')).catch(() => {});
   }, []);
 
-  // If already authenticated, redirect to dashboard
+  // If already authenticated, redirect to dashboard (via useEffect, NOT during render)
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
+  useEffect(() => {
+    if (mounted && isAuthenticated && user) {
+      const target = ROLE_DASHBOARD[user.role as User['role']] || "/";
+      navigate({ to: target, replace: true });
+    }
+  }, [mounted, isAuthenticated, user, navigate]);
+
   if (isAuthenticated && user) {
-    const target = ROLE_DASHBOARD[user.role as User['role']] || "/";
-    navigate({ to: target, replace: true });
     return null;
   }
 

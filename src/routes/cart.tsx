@@ -108,7 +108,7 @@ function CartPage() {
   const taxRate = restaurantInfo?.tax_rate || 8.5;
   const serviceChargeRate = restaurantInfo?.service_charge_rate || 10;
   const currency = restaurantInfo?.currency;
-  if (currency) setDefaultCurrency(currency);
+  useEffect(() => { if (currency) setDefaultCurrency(currency); }, [currency]);
   
   const subtotal = total;
   const tax = (subtotal * taxRate) / 100;

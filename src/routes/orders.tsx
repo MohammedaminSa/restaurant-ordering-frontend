@@ -5,7 +5,7 @@ import { setDefaultCurrency } from "@/lib/cart";
 import { SiteHeader } from "@/components/site-header";
 import { fmt } from "@/lib/cart";
 import { Clock, ChefHat, CheckCircle2, Loader2, Package, AlertCircle, PartyPopper, Timer } from "lucide-react";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/orders")({
@@ -18,8 +18,11 @@ function OrdersPage() {
   const sessionDataStr = localStorage.getItem("sessionData");
   const sessionData = sessionDataStr ? JSON.parse(sessionDataStr) : null;
   const ordersRestaurantId = sessionData?.restaurant_id;
-  if (sessionData?.currency) setDefaultCurrency(sessionData.currency);
   const hasPendingOrder = localStorage.getItem("pendingOrder") === "true";
+
+  useEffect(() => {
+    if (sessionData?.currency) setDefaultCurrency(sessionData.currency);
+  }, [sessionData?.currency]);
 
   // Poll session status to detect when cashier completes the bill
   const { data: sessionDataRes } = useQuery({
@@ -31,13 +34,20 @@ function OrdersPage() {
 
   const sessionStatus = sessionDataRes?.data?.status;
 
-  // Session completed — clear local data and show thank you
-  if (sessionStatus === "completed") {
-    localStorage.removeItem("sessionToken");
-    localStorage.removeItem("sessionData");
-    localStorage.removeItem("pendingTableInfo");
-    localStorage.removeItem("pendingOrder");
-    localStorage.removeItem("bistro-cart-v1");
+  // Session completed — clear local data (via effect, not during render)
+  const [cleared, setCleared] = useState(false);
+  useEffect(() => {
+    if (sessionStatus === "completed" && !cleared) {
+      localStorage.removeItem("sessionToken");
+      localStorage.removeItem("sessionData");
+      localStorage.removeItem("pendingTableInfo");
+      localStorage.removeItem("pendingOrder");
+      localStorage.removeItem("bistro-cart-v1");
+      setCleared(true);
+    }
+  }, [sessionStatus, cleared]);
+
+  if (sessionStatus === "completed" || cleared) {
     return <SessionCompleted />;
   }
 
