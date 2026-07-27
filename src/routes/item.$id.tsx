@@ -14,21 +14,29 @@ export const Route = createFileRoute("/item/$id")({
 
 function getCurrentRestaurantId(): string | undefined {
   if (typeof window === 'undefined') return undefined;
-  const sessionDataStr = localStorage.getItem("sessionData");
-  if (sessionDataStr) {
-    try {
-      return JSON.parse(sessionDataStr).restaurant_id;
-    } catch {}
+  try {
+    const sessionDataStr = localStorage.getItem("sessionData");
+    if (sessionDataStr) {
+      try {
+        return JSON.parse(sessionDataStr).restaurant_id;
+      } catch {}
+    }
+    const pendingInfo = localStorage.getItem("pendingTableInfo");
+    if (pendingInfo) {
+      try {
+        return JSON.parse(pendingInfo).restaurant_id;
+      } catch {}
+    }
+  } catch {
+    return undefined;
   }
-  const pendingInfo = localStorage.getItem("pendingTableInfo");
-  if (pendingInfo) {
-    try {
-      return JSON.parse(pendingInfo).restaurant_id;
-    } catch {}
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const fromQuery = params.get('restaurantId');
+    if (fromQuery) return fromQuery;
+  } catch {
+    return undefined;
   }
-  const params = new URLSearchParams(window.location.search);
-  const fromQuery = params.get('restaurantId');
-  if (fromQuery) return fromQuery;
   const authUser = useAuthStore.getState().user;
   if (authUser?.restaurant_id) return authUser.restaurant_id;
   return undefined;
@@ -42,7 +50,8 @@ function ItemDetail() {
   const [specialInstructions, setSpecialInstructions] = useState("");
   const [mounted, setMounted] = useState(false);
   useEffect(() => { setMounted(true); }, []);
-  const { user, isAuthenticated } = useAuthStore(s => ({ user: s.user, isAuthenticated: s.isAuthenticated }));
+  const user = useAuthStore(s => s.user);
+  const isAuthenticated = useAuthStore(s => s.isAuthenticated);
 
   const { data, isLoading, error } = useQuery({
     queryKey: ["menu-item", id],

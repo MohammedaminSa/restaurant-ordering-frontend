@@ -15,34 +15,42 @@ export const Route = createFileRoute("/")({
 
 function getCurrentRestaurantId(): string | undefined {
   if (typeof window === 'undefined') return undefined;
-  const sessionDataStr = localStorage.getItem("sessionData");
-  if (sessionDataStr) {
-    try {
-      return JSON.parse(sessionDataStr).restaurant_id;
-    } catch {}
+  try {
+    const sessionDataStr = localStorage.getItem("sessionData");
+    if (sessionDataStr) {
+      try {
+        return JSON.parse(sessionDataStr).restaurant_id;
+      } catch {}
+    }
+    const pendingInfo = localStorage.getItem("pendingTableInfo");
+    if (pendingInfo) {
+      try {
+        return JSON.parse(pendingInfo).restaurant_id;
+      } catch {}
+    }
+  } catch {
+    return undefined;
   }
-  const pendingInfo = localStorage.getItem("pendingTableInfo");
-  if (pendingInfo) {
-    try {
-      return JSON.parse(pendingInfo).restaurant_id;
-    } catch {}
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const fromQuery = params.get('restaurantId');
+    if (fromQuery) return fromQuery;
+  } catch {
+    return undefined;
   }
-  const params = new URLSearchParams(window.location.search);
-  const fromQuery = params.get('restaurantId');
-  if (fromQuery) return fromQuery;
   const authUser = useAuthStore.getState().user;
   if (authUser?.restaurant_id) return authUser.restaurant_id;
   return undefined;
 }
 
-async function loadMenu() {
-  const restaurantId = getCurrentRestaurantId();
-  if (!restaurantId) {
+async function loadMenu(restaurantId?: string) {
+  const id = restaurantId || getCurrentRestaurantId();
+  if (!id) {
     return { categories: [], items: [] };
   }
   const [catsRes, itemsRes] = await Promise.all([
-    getCategories(restaurantId),
-    getMenuItems({ isAvailable: true, restaurantId }),
+    getCategories(id),
+    getMenuItems({ isAvailable: true, restaurantId: id }),
   ]);
   return { 
     categories: catsRes.data as Category[], 
@@ -51,18 +59,21 @@ async function loadMenu() {
 }
 
 function Menu() {
-  const { user, isAuthenticated } = useAuthStore(s => ({ user: s.user, isAuthenticated: s.isAuthenticated }));
+  const user = useAuthStore(s => s.user);
+  const isAuthenticated = useAuthStore(s => s.isAuthenticated);
   const [mounted, setMounted] = useState(false);
   const [sessionToken, setSessionToken] = useState<string | null>(null);
   const [sessionData, setSessionData] = useState<any>(null);
   useEffect(() => {
     setMounted(true);
-    setSessionToken(localStorage.getItem("sessionToken"));
-    const raw = localStorage.getItem("sessionData");
-    if (raw) try { setSessionData(JSON.parse(raw)); } catch {}
+    try { setSessionToken(localStorage.getItem("sessionToken")); } catch {}
+    try {
+      const raw = localStorage.getItem("sessionData");
+      if (raw) try { setSessionData(JSON.parse(raw)); } catch {}
+    } catch {}
   }, []);
   const restaurantId = mounted ? (getCurrentRestaurantId() || user?.restaurant_id) : undefined;
-  const { data, isLoading } = useQuery({ queryKey: ["menu", restaurantId], queryFn: loadMenu });
+  const { data, isLoading } = useQuery({ queryKey: ["menu", restaurantId], queryFn: () => loadMenu(restaurantId) });
   const { data: restaurant } = useQuery({ queryKey: ["restaurant-info", restaurantId], queryFn: () => isAuthenticated && user?.restaurant_id ? getMyRestaurant() : getRestaurantInfo(restaurantId), staleTime: Infinity });
   const [active, setActive] = useState<string | null>(null);
   const { add } = useCart();
