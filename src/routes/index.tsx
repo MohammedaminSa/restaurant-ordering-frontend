@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
 import { getCategories, getMenuItems, getRestaurantInfo, getSessionByToken, type Category, type MenuItem, type HeroSettings } from "@/lib/api";
 import { SiteHeader } from "@/components/site-header";
+import { useAuthStore } from "@/lib/auth-store";
 import { useCart, fmt } from "@/lib/cart";
 import { toast } from "sonner";
 import { Plus, Clock, ImageOff } from "lucide-react";
@@ -28,6 +29,8 @@ function getCurrentRestaurantId(): string | undefined {
   const params = new URLSearchParams(window.location.search);
   const fromQuery = params.get('restaurantId');
   if (fromQuery) return fromQuery;
+  const authUser = useAuthStore.getState().user;
+  if (authUser?.restaurant_id) return authUser.restaurant_id;
   return undefined;
 }
 
