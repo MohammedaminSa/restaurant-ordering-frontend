@@ -1134,6 +1134,18 @@ export const getRestaurantInfo = async (restaurantId?: string): Promise<ApiRespo
   if (local) {
     return { success: true, data: { id: restaurantId || '', ...local } };
   }
+
+  // If user is authenticated, use /my endpoint which resolves restaurantId from JWT
+  const authUser = useAuthStore.getState().user;
+  if (authUser?.restaurant_id) {
+    try {
+      const response = await api.get('/restaurants/my');
+      return { success: true, data: response.data.data as RestaurantInfo };
+    } catch {
+      // Fall through to public API
+    }
+  }
+
   const params: Record<string, any> = { t: Date.now() };
   if (restaurantId) params.restaurantId = restaurantId;
   try {
