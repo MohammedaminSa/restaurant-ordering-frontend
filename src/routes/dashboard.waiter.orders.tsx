@@ -38,6 +38,7 @@ import {
   Banknote,
   Wallet,
   Landmark,
+  Clock,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Card, CardContent } from "@/components/ui/card";
@@ -52,6 +53,7 @@ export const Route = createFileRoute("/dashboard/waiter/orders")({
 function WaiterOrders() {
   const user = useAuthStore((s) => s.user);
   const queryClient = useQueryClient();
+  const [statusTab, setStatusTab] = useState("all");
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [cart, setCart] = useState<{ menu_item_id: string; name: string; price: number; quantity: number }[]>([]);
@@ -126,9 +128,21 @@ function WaiterOrders() {
   const wallets = paymentDetails?.wallets || [];
   const banks = paymentDetails?.banks || [];
 
-  const readyOrders = orders
-    .filter((o) => o.status === "ready")
-    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+  const groupedOrders = {
+    confirmed: orders.filter((o: any) => o.status === "confirmed").sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()),
+    preparing: orders.filter((o: any) => o.status === "preparing").sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()),
+    ready: orders.filter((o: any) => o.status === "ready").sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()),
+  };
+
+  const counts = {
+    confirmed: groupedOrders.confirmed.length,
+    preparing: groupedOrders.preparing.length,
+    ready: groupedOrders.ready.length,
+  };
+
+  let displayedOrders = statusTab === "all"
+    ? [...groupedOrders.confirmed, ...groupedOrders.preparing, ...groupedOrders.ready]
+    : groupedOrders[statusTab as keyof typeof groupedOrders] || [];
 
   const availableTables = tables.filter((t) => t.status !== 'maintenance');
 
@@ -195,9 +209,9 @@ function WaiterOrders() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="font-serif text-3xl text-foreground">Ready Orders</h1>
+          <h1 className="font-serif text-3xl text-foreground">Orders</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            {readyOrders.length} order{readyOrders.length !== 1 ? "s" : ""} ready to serve
+            {counts.ready} ready · {counts.preparing} preparing · {counts.confirmed} approved
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -224,26 +238,62 @@ function WaiterOrders() {
         </div>
       )}
 
-      {!ordersQuery.isLoading && readyOrders.length === 0 && (
+      <div className="flex gap-1 flex-wrap">
+        {[
+          { key: "all", label: "All Active", count: counts.confirmed + counts.preparing + counts.ready },
+          { key: "confirmed", label: "Approved", count: counts.confirmed },
+          { key: "preparing", label: "Preparing", count: counts.preparing },
+          { key: "ready", label: "Ready", count: counts.ready },
+        ].map((t) => (
+          <button
+            key={t.key}
+            onClick={() => setStatusTab(t.key)}
+            className={`rounded-full px-4 py-1.5 text-xs font-medium transition-colors flex items-center gap-1 ${
+              statusTab === t.key ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
+            }`}
+          >
+            {t.label}
+            <span className="text-[10px] opacity-70">{t.count}</span>
+          </button>
+        ))}
+      </div>
+
+      {!ordersQuery.isLoading && displayedOrders.length === 0 && (
         <div className="rounded-xl border border-border bg-card py-16 text-center">
           <CheckCircle2 className="h-12 w-12 mx-auto mb-3 text-muted-foreground/40" />
-          <p className="font-serif text-xl text-foreground mb-1">No ready orders</p>
-          <p className="text-sm text-muted-foreground mb-4">Orders from the kitchen will appear here</p>
+          <p className="font-serif text-xl text-foreground mb-1">No {statusTab === "all" ? "active" : statusTab} orders</p>
+          <p className="text-sm text-muted-foreground mb-4">
+            {statusTab === "confirmed" ? "Approved orders awaiting kitchen will appear here" :
+             statusTab === "preparing" ? "Orders being prepared will appear here" :
+             statusTab === "ready" ? "Orders ready to serve will appear here" :
+             "Orders from the kitchen will appear here"}
+          </p>
           <Button onClick={() => setShowCreateModal(true)}><Plus className="h-4 w-4 mr-1" />New Order</Button>
         </div>
       )}
 
-      {!ordersQuery.isLoading && readyOrders.length > 0 && (
+      {!ordersQuery.isLoading && displayedOrders.length > 0 && (
         <div className="space-y-3">
-          {readyOrders.map((order: any) => {
+          {displayedOrders.map((order: any) => {
             const table = getTableForOrder(order);
+            const borderRing = order.status === "ready" ? "ring-2 ring-emerald-400" :
+              order.status === "preparing" ? "ring-1 ring-orange-300" : "";
+            const icon = order.status === "ready" ? <Bell className="h-5 w-5 text-emerald-600 dark:text-emerald-400" /> :
+              order.status === "preparing" ? <Loader2 className="h-5 w-5 text-orange-500" /> :
+              <CheckCircle2 className="h-5 w-5 text-amber-500" />;
+            const iconBg = order.status === "ready" ? "bg-emerald-50 dark:bg-emerald-950/30" :
+              order.status === "preparing" ? "bg-orange-50 dark:bg-orange-950/30" :
+              "bg-amber-50 dark:bg-amber-950/30";
+            const statusLabel = order.status === "ready" ? "Ready" :
+              order.status === "preparing" ? "Preparing" : "Approved";
+
             return (
-              <Card key={order.id} className="ring-2 ring-emerald-400 transition-all hover:shadow-sm">
+              <Card key={order.id} className={`${borderRing} transition-all hover:shadow-sm`}>
                 <CardContent className="p-5">
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex items-center gap-3">
-                      <div className="rounded-lg bg-emerald-50 dark:bg-emerald-950/30 p-2">
-                        <Bell className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+                      <div className={`rounded-lg ${iconBg} p-2`}>
+                        {icon}
                       </div>
                       <div>
                         <div className="flex items-center gap-2">
@@ -252,7 +302,7 @@ function WaiterOrders() {
                           {table?.customer_name && <span className="text-xs text-muted-foreground">{table.customer_name}</span>}
                         </div>
                         <span className="text-xs text-muted-foreground">
-                          Ready · {getTimeAgo(order.created_at)}
+                          {statusLabel} · {getTimeAgo(order.created_at)}
                         </span>
                       </div>
                     </div>
@@ -269,19 +319,33 @@ function WaiterOrders() {
                   {order.special_instructions && (
                     <p className="mt-2 text-xs text-muted-foreground italic">Note: {order.special_instructions}</p>
                   )}
-                  <Button
-                    onClick={() => serveMutation.mutate(order.id)}
-                    disabled={serveMutation.isPending}
-                    className="mt-3"
-                    size="sm"
-                  >
-                    {serveMutation.isPending ? (
-                      <Loader2 className="h-4 w-4 animate-spin mr-1" />
-                    ) : (
-                      <CheckCircle2 className="h-4 w-4 mr-1" />
-                    )}
-                    Mark as Served
-                  </Button>
+                  {order.status === "ready" && (
+                    <Button
+                      onClick={() => serveMutation.mutate(order.id)}
+                      disabled={serveMutation.isPending}
+                      className="mt-3"
+                      size="sm"
+                    >
+                      {serveMutation.isPending ? (
+                        <Loader2 className="h-4 w-4 animate-spin mr-1" />
+                      ) : (
+                        <CheckCircle2 className="h-4 w-4 mr-1" />
+                      )}
+                      Mark as Served
+                    </Button>
+                  )}
+                  {order.status === "preparing" && (
+                    <div className="mt-3 flex items-center gap-2 text-sm text-muted-foreground">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Being prepared in kitchen
+                    </div>
+                  )}
+                  {order.status === "confirmed" && (
+                    <div className="mt-3 flex items-center gap-2 text-sm text-muted-foreground">
+                      <Clock className="h-4 w-4" />
+                      Waiting for kitchen to start
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             );

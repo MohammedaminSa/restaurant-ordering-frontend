@@ -16,6 +16,15 @@ export const Route = createFileRoute("/")({
 function getCurrentRestaurantId(): string | undefined {
   if (typeof window === 'undefined') return undefined;
   try {
+    const params = new URLSearchParams(window.location.search);
+    const fromQuery = params.get('restaurantId');
+    if (fromQuery) return fromQuery;
+  } catch {
+    return undefined;
+  }
+  const authUser = useAuthStore.getState().user;
+  if (authUser?.restaurant_id) return authUser.restaurant_id;
+  try {
     const sessionDataStr = localStorage.getItem("sessionData");
     if (sessionDataStr) {
       try {
@@ -31,15 +40,6 @@ function getCurrentRestaurantId(): string | undefined {
   } catch {
     return undefined;
   }
-  try {
-    const params = new URLSearchParams(window.location.search);
-    const fromQuery = params.get('restaurantId');
-    if (fromQuery) return fromQuery;
-  } catch {
-    return undefined;
-  }
-  const authUser = useAuthStore.getState().user;
-  if (authUser?.restaurant_id) return authUser.restaurant_id;
   return undefined;
 }
 
