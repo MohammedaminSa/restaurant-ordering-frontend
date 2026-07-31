@@ -176,6 +176,8 @@ export function SiteHeader({ restaurantId: propRestaurantId }: { restaurantId?: 
             </div>
           ) : null}
 
+          <LanguageSwitcher />
+
           <ThemeToggle />
 
           <Link
