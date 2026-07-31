@@ -4,6 +4,7 @@ import { getMenuItemById, getRestaurantInfo, getMyRestaurant, cacheStaffRestaura
 import { SiteHeader } from "@/components/site-header";
 import { useAuthStore } from "@/lib/auth-store";
 import { useCart, fmt } from "@/lib/cart";
+import { useT } from "@/lib/i18n";
 import { toast } from "sonner";
 import { ArrowLeft, Clock, Plus, Minus, ChefHat, Check, ImageOff } from "lucide-react";
 import { useState, useEffect } from "react";
@@ -45,6 +46,7 @@ function getCurrentRestaurantId(): string | undefined {
 function ItemDetail() {
   const { id } = Route.useParams();
   const navigate = useNavigate();
+  const { t } = useT();
   const { add } = useCart();
   const [qty, setQty] = useState(1);
   const [specialInstructions, setSpecialInstructions] = useState("");
@@ -86,7 +88,7 @@ function ItemDetail() {
     if (!menuItem) return;
     
     add(menuItem.id, menuItem.name, Number(menuItem.base_price), qty, [], specialInstructions || undefined);
-    toast.success(`${qty}x ${menuItem.name} added to cart`);
+    toast.success(t("item.addedToCart", { qty, name: menuItem.name }));
     navigate({ to: "/" });
   };
 
@@ -99,7 +101,7 @@ function ItemDetail() {
           onClick={() => navigate({ to: "/" })}
           className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-6"
         >
-          <ArrowLeft className="h-4 w-4" /> Back to menu
+          <ArrowLeft className="h-4 w-4" /> {t("item.backToMenu")}
         </button>
 
         {isLoading && (
@@ -112,15 +114,15 @@ function ItemDetail() {
         {(error || (!isLoading && !menuItem)) && (
           <div className="rounded-xl border border-border bg-card p-12 text-center">
             <ChefHat className="mx-auto h-16 w-16 text-muted-foreground mb-4" />
-            <h2 className="font-serif text-2xl text-foreground mb-2">Item Not Found</h2>
+            <h2 className="font-serif text-2xl text-foreground mb-2">{t("item.notFound")}</h2>
             <p className="text-muted-foreground mb-6">
-              This dish isn't available right now.
+              {t("item.unavailableNow")}
             </p>
             <button
               onClick={() => navigate({ to: "/" })}
               className="inline-flex items-center rounded-lg bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
             >
-              Browse Menu
+              {t("common.browseMenu")}
             </button>
           </div>
         )}
@@ -159,16 +161,16 @@ function ItemDetail() {
                   {menuItem.preparation_time && (
                     <div className="flex items-center gap-2">
                       <Clock className="h-4 w-4" />
-                      <span>{menuItem.preparation_time} min</span>
+                      <span>{t("common.minutes", { n: menuItem.preparation_time })}</span>
                     </div>
                   )}
                   {menuItem.is_available ? (
                     <div className="flex items-center gap-2 text-green-600">
                       <Check className="h-4 w-4" />
-                      <span className="font-medium">Available</span>
+                      <span className="font-medium">{t("item.available")}</span>
                     </div>
                   ) : (
-                    <span className="font-medium text-destructive">Currently Unavailable</span>
+                    <span className="font-medium text-destructive">{t("item.unavailable")}</span>
                   )}
                 </div>
 
@@ -180,7 +182,7 @@ function ItemDetail() {
                 {/* Ingredients */}
                 {menuItem.ingredients && menuItem.ingredients.length > 0 && (
                   <div className="mt-8">
-                    <h2 className="font-semibold text-lg text-foreground mb-3">Ingredients</h2>
+                    <h2 className="font-semibold text-lg text-foreground mb-3">{t("item.ingredients")}</h2>
                     <div className="flex flex-wrap gap-2">
                       {menuItem.ingredients.map((ing: string) => (
                         <span
@@ -197,7 +199,7 @@ function ItemDetail() {
                 {/* Allergens */}
                 {menuItem.allergens && menuItem.allergens.length > 0 && (
                   <div className="mt-6">
-                    <h2 className="font-semibold text-sm text-foreground mb-2">Allergen Information</h2>
+                    <h2 className="font-semibold text-sm text-foreground mb-2">{t("item.allergenInfo")}</h2>
                     <div className="flex flex-wrap gap-2">
                       {menuItem.allergens.map((allergen: string) => (
                         <span
@@ -216,14 +218,14 @@ function ItemDetail() {
             {/* Special Instructions */}
             <div className="rounded-xl border border-border bg-card p-6">
               <h2 className="font-semibold text-lg text-foreground mb-3">
-                Special Instructions (Optional)
+                {t("item.specialInstructions")}
               </h2>
               <textarea
                 value={specialInstructions}
                 onChange={(e) => setSpecialInstructions(e.target.value)}
                 rows={3}
                 className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring resize-none"
-                placeholder="Any special requests? (e.g., no onions, extra spicy)"
+                placeholder={t("item.specialInstructionsPlaceholder")}
               />
             </div>
 
@@ -235,7 +237,7 @@ function ItemDetail() {
                   <button
                     onClick={() => setQty((q) => Math.max(1, q - 1))}
                     className="rounded-full p-2 hover:bg-accent hover:text-accent-foreground transition-colors"
-                    aria-label="Decrease quantity"
+                    aria-label={t("item.decreaseQty")}
                   >
                     <Minus className="h-4 w-4" />
                   </button>
@@ -243,7 +245,7 @@ function ItemDetail() {
                   <button
                     onClick={() => setQty((q) => q + 1)}
                     className="rounded-full p-2 hover:bg-accent hover:text-accent-foreground transition-colors"
-                    aria-label="Increase quantity"
+                    aria-label={t("item.increaseQty")}
                   >
                     <Plus className="h-4 w-4" />
                   </button>
@@ -255,7 +257,7 @@ function ItemDetail() {
                   disabled={!menuItem.is_available}
                   className="flex-1 rounded-lg bg-primary px-6 py-3.5 text-base font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
-                  Add to Order · {fmt(Number(menuItem.base_price) * qty, currency)}
+                  {t("item.addToOrder", { price: fmt(Number(menuItem.base_price) * qty, currency) })}
                 </button>
               </div>
             </div>

@@ -1,19 +1,41 @@
 import { Link, useNavigate } from "@tanstack/react-router";
-import { ShoppingBag, UtensilsCrossed, LayoutDashboard, LogOut, UserIcon, ChevronDown, Menu, X } from "lucide-react";
+import {
+  ShoppingBag,
+  UtensilsCrossed,
+  LayoutDashboard,
+  LogOut,
+  UserIcon,
+  ChevronDown,
+  Menu,
+  X,
+} from "lucide-react";
 import { useCart } from "@/lib/cart";
 import { useAuthStore } from "@/lib/auth-store";
-import { ROLE_LABELS, ROLE_DASHBOARD, getRestaurantInfo, getMyRestaurant, cacheStaffRestaurant, type User, type RestaurantInfo } from "@/lib/api";
+import {
+  ROLE_LABELS,
+  ROLE_DASHBOARD,
+  getRestaurantInfo,
+  getMyRestaurant,
+  cacheStaffRestaurant,
+  type User,
+  type RestaurantInfo,
+} from "@/lib/api";
 import { setDefaultCurrency } from "@/lib/cart";
 import { toast } from "sonner";
 import { useState, useRef, useEffect, useCallback } from "react";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { LanguageSwitcher } from "@/components/language-switcher";
+import { useT } from "@/lib/i18n";
 
 export function SiteHeader({ restaurantId: propRestaurantId }: { restaurantId?: string } = {}) {
   const navigate = useNavigate();
+  const { t } = useT();
   const { count } = useCart();
   const { user, isAuthenticated, logout } = useAuthStore();
   const [mounted, setMounted] = useState(false);
-  useEffect(() => { setMounted(true); }, []);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
   const [menuOpen, setMenuOpen] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [restaurant, setRestaurant] = useState<RestaurantInfo | null>(null);
@@ -23,23 +45,27 @@ export function SiteHeader({ restaurantId: propRestaurantId }: { restaurantId?: 
 
   useEffect(() => {
     if (isAuthenticated && user?.restaurant_id) {
-      getMyRestaurant().then(r => {
-        setRestaurant(r.data);
-        if (r.data?.currency) setDefaultCurrency(r.data.currency);
-        cacheStaffRestaurant({
-          restaurant_id: r.data.id,
-          name: r.data.name,
-          currency: r.data.currency,
-          logo_url: r.data.logo_url,
-          tax_rate: r.data.tax_rate,
-          service_charge_rate: r.data.service_charge_rate,
-        });
-      }).catch(() => {});
+      getMyRestaurant()
+        .then((r) => {
+          setRestaurant(r.data);
+          if (r.data?.currency) setDefaultCurrency(r.data.currency);
+          cacheStaffRestaurant({
+            restaurant_id: r.data.id,
+            name: r.data.name,
+            currency: r.data.currency,
+            logo_url: r.data.logo_url,
+            tax_rate: r.data.tax_rate,
+            service_charge_rate: r.data.service_charge_rate,
+          });
+        })
+        .catch(() => {});
     } else if (propRestaurantId) {
-      getRestaurantInfo(propRestaurantId).then(r => {
-        setRestaurant(r.data);
-        if (r.data?.currency) setDefaultCurrency(r.data.currency);
-      }).catch(() => {});
+      getRestaurantInfo(propRestaurantId)
+        .then((r) => {
+          setRestaurant(r.data);
+          if (r.data?.currency) setDefaultCurrency(r.data.currency);
+        })
+        .catch(() => {});
     }
   }, [isAuthenticated, user?.restaurant_id, propRestaurantId]);
 
@@ -55,7 +81,7 @@ export function SiteHeader({ restaurantId: propRestaurantId }: { restaurantId?: 
 
   const handleLogout = async () => {
     await logout();
-    toast.success("Logged out");
+    toast.success(t("nav.loggedOut"));
     setMenuOpen(false);
     setMobileNavOpen(false);
   };
@@ -65,7 +91,7 @@ export function SiteHeader({ restaurantId: propRestaurantId }: { restaurantId?: 
     if (tapTimerRef.current) clearTimeout(tapTimerRef.current);
     if (tapCountRef.current >= 5) {
       tapCountRef.current = 0;
-      navigate({ to: '/auth' });
+      navigate({ to: "/auth" });
       return;
     }
     tapTimerRef.current = setTimeout(() => {
@@ -73,14 +99,21 @@ export function SiteHeader({ restaurantId: propRestaurantId }: { restaurantId?: 
     }, 3000);
   }, [navigate]);
 
-  const displayName = restaurant?.name || 'Restaurant';
+  const displayName = restaurant?.name || t("header.restaurant");
 
   return (
     <header className="sticky top-0 z-40 border-b border-border/60 bg-background/85 backdrop-blur">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4">
-        <button onClick={handleLogoClick} className="flex items-center gap-2 text-foreground shrink-0">
+        <button
+          onClick={handleLogoClick}
+          className="flex items-center gap-2 text-foreground shrink-0"
+        >
           {restaurant?.logo_url ? (
-            <img src={restaurant.logo_url} alt={displayName} className="h-8 w-8 rounded-full object-cover" />
+            <img
+              src={restaurant.logo_url}
+              alt={displayName}
+              className="h-8 w-8 rounded-full object-cover"
+            />
           ) : (
             <UtensilsCrossed className="h-5 w-5 text-accent" />
           )}
@@ -95,14 +128,14 @@ export function SiteHeader({ restaurantId: propRestaurantId }: { restaurantId?: 
             activeOptions={{ exact: true }}
             activeProps={{ className: "text-foreground" }}
           >
-            Menu
+            {t("nav.menu")}
           </Link>
           <Link
             to="/orders"
             className="text-muted-foreground transition-colors hover:text-foreground"
             activeProps={{ className: "text-foreground" }}
           >
-            Orders
+            {t("nav.orders")}
           </Link>
 
           {mounted && isAuthenticated && user ? (
@@ -120,23 +153,23 @@ export function SiteHeader({ restaurantId: propRestaurantId }: { restaurantId?: 
                   <div className="px-4 py-2 border-b border-border">
                     <p className="text-sm font-medium text-foreground truncate">{user.name}</p>
                     <p className="text-xs text-muted-foreground">
-                      {ROLE_LABELS[user.role as User['role']] || user.role}
+                      {ROLE_LABELS[user.role as User["role"]] || user.role}
                     </p>
                   </div>
                   <Link
-                    to={ROLE_DASHBOARD[user.role as User['role']] as any || "/dashboard"}
+                    to={(ROLE_DASHBOARD[user.role as User["role"]] as any) || "/dashboard"}
                     onClick={() => setMenuOpen(false)}
                     className="flex items-center gap-3 px-4 py-2 text-sm text-foreground hover:bg-accent transition-colors"
                   >
                     <LayoutDashboard className="h-4 w-4" />
-                    Dashboard
+                    {t("nav.dashboard")}
                   </Link>
                   <button
                     onClick={handleLogout}
                     className="flex w-full items-center gap-3 px-4 py-2 text-sm text-destructive hover:bg-destructive/10 transition-colors"
                   >
                     <LogOut className="h-4 w-4" />
-                    Sign Out
+                    {t("nav.signOut")}
                   </button>
                 </div>
               )}
@@ -166,7 +199,7 @@ export function SiteHeader({ restaurantId: propRestaurantId }: { restaurantId?: 
           <button
             onClick={() => setMobileNavOpen(!mobileNavOpen)}
             className="flex items-center justify-center rounded-lg p-2 text-foreground hover:bg-accent"
-            aria-label="Toggle navigation"
+            aria-label={t("nav.toggleNavigation")}
           >
             {mobileNavOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
@@ -183,14 +216,14 @@ export function SiteHeader({ restaurantId: propRestaurantId }: { restaurantId?: 
               className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground hover:bg-accent"
               activeOptions={{ exact: true }}
             >
-              Menu
+              {t("nav.menu")}
             </Link>
             <Link
               to="/orders"
               onClick={() => setMobileNavOpen(false)}
               className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground hover:bg-accent"
             >
-              Orders
+              {t("nav.orders")}
             </Link>
             {mounted && isAuthenticated && user ? (
               <>
@@ -198,27 +231,28 @@ export function SiteHeader({ restaurantId: propRestaurantId }: { restaurantId?: 
                 <div className="px-3 py-2">
                   <p className="text-sm font-medium text-foreground">{user.name}</p>
                   <p className="text-xs text-muted-foreground">
-                    {ROLE_LABELS[user.role as User['role']] || user.role}
+                    {ROLE_LABELS[user.role as User["role"]] || user.role}
                   </p>
                 </div>
                 <Link
-                  to={ROLE_DASHBOARD[user.role as User['role']] as any || "/dashboard"}
+                  to={(ROLE_DASHBOARD[user.role as User["role"]] as any) || "/dashboard"}
                   onClick={() => setMobileNavOpen(false)}
                   className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground hover:bg-accent"
                 >
                   <LayoutDashboard className="h-4 w-4" />
-                  Dashboard
+                  {t("nav.dashboard")}
                 </Link>
                 <button
                   onClick={handleLogout}
                   className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-destructive hover:bg-destructive/10"
                 >
                   <LogOut className="h-4 w-4" />
-                  Sign Out
+                  {t("nav.signOut")}
                 </button>
               </>
             ) : null}
-            <div className="pt-2 px-3">
+            <div className="flex items-center gap-2 pt-2 px-3">
+              <LanguageSwitcher align="left" />
               <ThemeToggle />
             </div>
           </nav>

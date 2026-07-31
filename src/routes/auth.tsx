@@ -1,14 +1,9 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
-import {
-  UtensilsCrossed,
-  Loader2,
-  Eye,
-  EyeOff,
-  AlertCircle,
-} from "lucide-react";
+import { UtensilsCrossed, Loader2, Eye, EyeOff, AlertCircle } from "lucide-react";
 import { useAuthStore } from "@/lib/auth-store";
+import { useT } from "@/lib/i18n";
 import { getRestaurantInfo, ROLE_DASHBOARD, ROLE_LABELS, type User } from "@/lib/api";
 
 export const Route = createFileRoute("/auth")({
@@ -17,6 +12,7 @@ export const Route = createFileRoute("/auth")({
 
 function AuthPage() {
   const navigate = useNavigate();
+  const { t } = useT();
   const login = useAuthStore((s) => s.login);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const user = useAuthStore((s) => s.user);
@@ -29,16 +25,20 @@ function AuthPage() {
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const rid = params.get('restaurantId') || undefined;
-    getRestaurantInfo(rid).then(r => setRestaurantName(r.data?.name || 'Restaurant')).catch(() => {});
+    const rid = params.get("restaurantId") || undefined;
+    getRestaurantInfo(rid)
+      .then((r) => setRestaurantName(r.data?.name || "Restaurant"))
+      .catch(() => {});
   }, []);
 
   // If already authenticated, redirect to dashboard (via useEffect, NOT during render)
   const [mounted, setMounted] = useState(false);
-  useEffect(() => { setMounted(true); }, []);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
   useEffect(() => {
     if (mounted && isAuthenticated && user) {
-      const target = ROLE_DASHBOARD[user.role as User['role']] || "/";
+      const target = ROLE_DASHBOARD[user.role as User["role"]] || "/";
       navigate({ to: target, replace: true });
     }
   }, [mounted, isAuthenticated, user, navigate]);
@@ -52,7 +52,7 @@ function AuthPage() {
     setError(null);
 
     if (!email.trim() || !password) {
-      setError("Email and password are required");
+      setError(t("auth.emailRequired"));
       return;
     }
 
@@ -60,11 +60,12 @@ function AuthPage() {
     try {
       await login(email, password);
       const currentUser = useAuthStore.getState().user;
-      toast.success(`Welcome back, ${currentUser?.name || currentUser?.email}!`);
-      const target = ROLE_DASHBOARD[(currentUser?.role || 'waiter') as User['role']] || "/dashboard";
+      toast.success(t("auth.welcomeBack", { name: currentUser?.name || currentUser?.email || "" }));
+      const target =
+        ROLE_DASHBOARD[(currentUser?.role || "waiter") as User["role"]] || "/dashboard";
       navigate({ to: target, replace: true });
     } catch (err: any) {
-      const msg = err.message || "Invalid email or password";
+      const msg = err.message || t("auth.invalidCredentials");
       setError(msg);
       toast.error(msg);
     } finally {
@@ -75,20 +76,15 @@ function AuthPage() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="w-full max-w-md rounded-2xl border border-border bg-card p-8 shadow-sm">
-        <Link
-          to="/"
-          className="mb-6 flex items-center justify-center gap-2 text-accent"
-        >
+        <Link to="/" className="mb-6 flex items-center justify-center gap-2 text-accent">
           <UtensilsCrossed className="h-5 w-5" />
           <span className="font-serif text-xl text-foreground">{restaurantName}</span>
         </Link>
 
         <h1 className="text-center font-serif text-2xl text-card-foreground">
-          Staff Login
+          {t("auth.staffLogin")}
         </h1>
-        <p className="mt-1 text-center text-sm text-muted-foreground">
-          Sign in to access the staff dashboard
-        </p>
+        <p className="mt-1 text-center text-sm text-muted-foreground">{t("auth.signInHint")}</p>
 
         {error && (
           <div className="mt-4 flex items-start gap-3 rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
@@ -99,11 +95,8 @@ function AuthPage() {
 
         <form onSubmit={submit} className="mt-6 space-y-4">
           <div>
-            <label
-              htmlFor="email"
-              className="mb-1.5 block text-sm font-medium text-foreground"
-            >
-              Email
+            <label htmlFor="email" className="mb-1.5 block text-sm font-medium text-foreground">
+              {t("auth.email")}
             </label>
             <input
               id="email"
@@ -119,11 +112,8 @@ function AuthPage() {
           </div>
 
           <div>
-            <label
-              htmlFor="password"
-              className="mb-1.5 block text-sm font-medium text-foreground"
-            >
-              Password
+            <label htmlFor="password" className="mb-1.5 block text-sm font-medium text-foreground">
+              {t("auth.password")}
             </label>
             <div className="relative">
               <input
@@ -131,7 +121,7 @@ function AuthPage() {
                 type={showPassword ? "text" : "password"}
                 required
                 minLength={6}
-                placeholder="Password"
+                placeholder={t("auth.password")}
                 autoComplete="current-password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -144,11 +134,7 @@ function AuthPage() {
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                 tabIndex={-1}
               >
-                {showPassword ? (
-                  <EyeOff className="h-4 w-4" />
-                ) : (
-                  <Eye className="h-4 w-4" />
-                )}
+                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </button>
             </div>
           </div>
@@ -159,15 +145,11 @@ function AuthPage() {
             className="flex w-full items-center justify-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground transition-all hover:bg-primary/90 disabled:opacity-60"
           >
             {busy && <Loader2 className="h-4 w-4 animate-spin" />}
-            {busy ? "Signing in..." : "Sign in"}
+            {busy ? t("auth.signingIn") : t("auth.signIn")}
           </button>
         </form>
 
-
-
-        <p className="mt-6 text-center text-xs text-muted-foreground">
-          For customer orders, scan the QR code at your table
-        </p>
+        <p className="mt-6 text-center text-xs text-muted-foreground">{t("auth.customerHint")}</p>
       </div>
     </div>
   );

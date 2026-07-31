@@ -2,10 +2,42 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useCart, fmt, setDefaultCurrency } from "@/lib/cart";
-import { placeOrder, createSession, getSessionByToken, getSessionOrders, getSessionNotifications, type PaymentDetails } from "@/lib/api";
+import { useT } from "@/lib/i18n";
+import {
+  placeOrder,
+  createSession,
+  getSessionByToken,
+  getSessionOrders,
+  getSessionNotifications,
+  type PaymentDetails,
+} from "@/lib/api";
 import { toast } from "sonner";
-import { ShoppingBag, ArrowLeft, CheckCircle, Loader2, MapPin, User, Table as TableIcon, Trash2, Plus, Minus, Smartphone, Building2, Banknote, Wallet, Landmark, XCircle, Timer } from "lucide-react";
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
+import {
+  ShoppingBag,
+  ArrowLeft,
+  CheckCircle,
+  Loader2,
+  MapPin,
+  User,
+  Table as TableIcon,
+  Trash2,
+  Plus,
+  Minus,
+  Smartphone,
+  Building2,
+  Banknote,
+  Wallet,
+  Landmark,
+  XCircle,
+  Timer,
+} from "lucide-react";
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { SiteHeader } from "@/components/site-header";
 
@@ -15,6 +47,7 @@ export const Route = createFileRoute("/cart")({
 
 function CartPage() {
   const navigate = useNavigate();
+  const { t } = useT();
   const { items, count, total, clear, updateQuantity, remove } = useCart();
   const [submitting, setSubmitting] = useState(false);
   const [orderInstructions, setOrderInstructions] = useState("");
@@ -24,14 +57,16 @@ function CartPage() {
   const [pendingTableInfo, setPendingTableInfo] = useState<any>(null);
   const [paymentDetails, setPaymentDetails] = useState<PaymentDetails | null>(null);
   const [fetchingSession, setFetchingSession] = useState(false);
-  const [step, setStep] = useState<'checkout' | 'payment-method' | 'payment-details' | 'confirmation'>('checkout');
+  const [step, setStep] = useState<
+    "checkout" | "payment-method" | "payment-details" | "confirmation"
+  >("checkout");
 
   // Payment form state
-  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string>('cash');
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string>("cash");
   const [selectedAccount, setSelectedAccount] = useState<any>(null);
-  const [transactionId, setTransactionId] = useState('');
-  const [payerName, setPayerName] = useState('');
-  const [customerPhone, setCustomerPhone] = useState('');
+  const [transactionId, setTransactionId] = useState("");
+  const [payerName, setPayerName] = useState("");
+  const [customerPhone, setCustomerPhone] = useState("");
 
   const sessionToken = localStorage.getItem("sessionToken");
   const sessionDataStr = localStorage.getItem("sessionData");
@@ -40,7 +75,7 @@ function CartPage() {
   const { data: ordersData } = useQuery({
     queryKey: ["cart-orders", sessionToken],
     queryFn: () => getSessionOrders(sessionToken!),
-    enabled: !!sessionToken && step === 'confirmation',
+    enabled: !!sessionToken && step === "confirmation",
     refetchInterval: 5000,
   });
 
@@ -48,15 +83,15 @@ function CartPage() {
   const { data: notifData } = useQuery({
     queryKey: ["cart-notifications", sessionToken],
     queryFn: () => getSessionNotifications(sessionToken!),
-    enabled: !!sessionToken && step === 'confirmation',
+    enabled: !!sessionToken && step === "confirmation",
     refetchInterval: 5000,
   });
-  
+
   // Initialize state with localStorage data on mount
   const [currentSessionData, setCurrentSessionData] = useState<any>(() => {
     return sessionDataStr ? JSON.parse(sessionDataStr) : null;
   });
-  
+
   // Use currentSessionData as sessionData
   const sessionData = currentSessionData;
 
@@ -91,7 +126,11 @@ function CartPage() {
             // Enrich localStorage with payment_details
             const existing = localStorage.getItem("sessionData");
             if (existing) {
-              const enriched = { ...JSON.parse(existing), payment_details: session.payment_details, currency: session.currency };
+              const enriched = {
+                ...JSON.parse(existing),
+                payment_details: session.payment_details,
+                currency: session.currency,
+              };
               localStorage.setItem("sessionData", JSON.stringify(enriched));
               setCurrentSessionData(enriched);
             }
@@ -108,8 +147,10 @@ function CartPage() {
   const taxRate = restaurantInfo?.tax_rate || 8.5;
   const serviceChargeRate = restaurantInfo?.service_charge_rate || 10;
   const currency = restaurantInfo?.currency;
-  useEffect(() => { if (currency) setDefaultCurrency(currency); }, [currency]);
-  
+  useEffect(() => {
+    if (currency) setDefaultCurrency(currency);
+  }, [currency]);
+
   const subtotal = total;
   const tax = (subtotal * taxRate) / 100;
   const serviceCharge = (subtotal * serviceChargeRate) / 100;
@@ -117,33 +158,33 @@ function CartPage() {
 
   const handleStartOrdering = () => {
     if (items.length === 0) {
-      toast.error("Your cart is empty");
+      toast.error(t("cart.cartEmptyToast"));
       return;
     }
 
     if (!sessionToken && !pendingTableInfo) {
-      toast.error("Please scan a QR code to start a session");
+      toast.error(t("cart.scanQrToast"));
       return;
     }
 
-    setSelectedPaymentMethod('cash');
+    setSelectedPaymentMethod("cash");
     setSelectedAccount(null);
-    setTransactionId('');
-    setPayerName(sessionData?.customer_name || '');
-    setCustomerPhone(sessionData?.customer_phone || '');
+    setTransactionId("");
+    setPayerName(sessionData?.customer_name || "");
+    setCustomerPhone(sessionData?.customer_phone || "");
 
-    setStep('payment-method');
+    setStep("payment-method");
   };
 
   const handleConfirmOrder = async () => {
     if (!payerName.trim()) {
-      toast.error("Please enter your name");
+      toast.error(t("cart.enterNameToast"));
       return;
     }
 
     // Validate non-cash payment requires transaction ID
-    if (selectedPaymentMethod !== 'cash' && !transactionId.trim()) {
-      toast.error("Please enter the transaction ID");
+    if (selectedPaymentMethod !== "cash" && !transactionId.trim()) {
+      toast.error(t("cart.enterTransactionIdToast"));
       return;
     }
 
@@ -153,7 +194,7 @@ function CartPage() {
       let token = sessionToken;
       if (!token) {
         if (!pendingTableInfo) {
-          toast.error("No table information found. Please scan a QR code.");
+          toast.error(t("cart.noTableToast"));
           setSubmitting(false);
           return;
         }
@@ -172,7 +213,7 @@ function CartPage() {
           restaurant_logo: pendingTableInfo.restaurant_logo,
           tax_rate: pendingTableInfo.tax_rate,
           service_charge_rate: pendingTableInfo.service_charge_rate,
-          currency: pendingTableInfo.currency || 'ETB',
+          currency: pendingTableInfo.currency || "ETB",
           payment_details: pendingTableInfo.payment_details || sessionResult.payment_details,
           orders: [],
         };
@@ -194,11 +235,12 @@ function CartPage() {
         items: orderItems,
         special_instructions: orderInstructions.trim() || undefined,
         payment_method: selectedPaymentMethod as any,
-        transaction_id: selectedPaymentMethod !== 'cash' ? transactionId.trim() : undefined,
-        payment_account: selectedPaymentMethod !== 'cash' && selectedAccount ? selectedAccount : undefined,
+        transaction_id: selectedPaymentMethod !== "cash" ? transactionId.trim() : undefined,
+        payment_account:
+          selectedPaymentMethod !== "cash" && selectedAccount ? selectedAccount : undefined,
       });
 
-      setStep('confirmation');
+      setStep("confirmation");
       setOrderNumber(response.data.order_number);
       setOrderId(response.data.id);
       setOrderCreatedAt(response.data.created_at);
@@ -207,7 +249,7 @@ function CartPage() {
       setOrderInstructions("");
     } catch (error: any) {
       console.error("Failed to place order:", error);
-      toast.error(error.message || "Failed to place order");
+      toast.error(error.message || t("cart.failedToPlace"));
     } finally {
       setSubmitting(false);
     }
@@ -218,22 +260,20 @@ function CartPage() {
   };
 
   // Redirect if cart is empty (but NOT if on confirmation step)
-  if (items.length === 0 && step !== 'confirmation') {
+  if (items.length === 0 && step !== "confirmation") {
     return (
       <div className="min-h-screen bg-background">
         <SiteHeader restaurantId={cartRestaurantId} />
         <div className="mx-auto max-w-2xl px-4 py-8">
           <div className="rounded-xl border border-border bg-card p-12 text-center">
             <ShoppingBag className="mx-auto h-20 w-20 text-muted-foreground mb-4" />
-            <h2 className="font-serif text-2xl text-foreground mb-2">Your cart is empty</h2>
-            <p className="text-muted-foreground mb-6">
-              Add items from the menu to place an order
-            </p>
+            <h2 className="font-serif text-2xl text-foreground mb-2">{t("cart.emptyTitle")}</h2>
+            <p className="text-muted-foreground mb-6">{t("cart.emptySubtitle")}</p>
             <button
               onClick={() => navigate({ to: "/" })}
               className="inline-flex items-center rounded-lg bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
             >
-              Browse Menu
+              {t("common.browseMenu")}
             </button>
           </div>
         </div>
@@ -242,21 +282,19 @@ function CartPage() {
   }
 
   // Redirect if no session AND no pending table info (but NOT if on confirmation step)
-  if (!sessionData && !pendingTableInfo && step !== 'confirmation') {
+  if (!sessionData && !pendingTableInfo && step !== "confirmation") {
     return (
       <div className="min-h-screen bg-background">
         <SiteHeader restaurantId={cartRestaurantId} />
         <div className="mx-auto max-w-2xl px-4 py-8">
           <div className="rounded-xl border border-red-200 bg-red-50 p-4 mb-4">
-            <p className="text-sm text-red-800">
-              No active session found. Please scan a QR code to start a session.
-            </p>
+            <p className="text-sm text-red-800">{t("cart.noSession")}</p>
           </div>
           <button
             onClick={() => navigate({ to: "/" })}
             className="rounded-lg bg-primary px-6 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
           >
-            Go to Home
+            {t("cart.goHome")}
           </button>
         </div>
       </div>
@@ -266,7 +304,7 @@ function CartPage() {
   // =========================================================
   // STEP 3: CONFIRMATION
   // =========================================================
-  if (step === 'confirmation') {
+  if (step === "confirmation") {
     const confirmedOrders = ordersData?.data || [];
     const notifications = notifData?.data || [];
 
@@ -277,8 +315,11 @@ function CartPage() {
 
     // Payment is rejected when a rejection notification exists AFTER our order was placed
     const paymentRejected = orderCreatedAt
-      ? notifications.some((n: any) => n.type === 'payment_rejected' && new Date(n.created_at) > new Date(orderCreatedAt))
-      : notifications.some((n: any) => n.type === 'payment_rejected');
+      ? notifications.some(
+          (n: any) =>
+            n.type === "payment_rejected" && new Date(n.created_at) > new Date(orderCreatedAt),
+        )
+      : notifications.some((n: any) => n.type === "payment_rejected");
 
     if (paymentApproved) {
       return (
@@ -288,14 +329,14 @@ function CartPage() {
             <div className="rounded-full bg-green-100 p-4 w-24 h-24 mx-auto mb-6 flex items-center justify-center">
               <CheckCircle className="h-12 w-12 text-green-600" />
             </div>
-            <h1 className="text-3xl font-bold text-foreground mb-2">Payment Approved!</h1>
-            <p className="text-muted-foreground mb-2">Your order is being processed</p>
+            <h1 className="text-3xl font-bold text-foreground mb-2">{t("cart.approvedTitle")}</h1>
+            <p className="text-muted-foreground mb-2">{t("cart.approvedSubtitle")}</p>
             <p className="text-5xl font-bold text-primary mb-8">#{orderNumber}</p>
             <button
               onClick={() => navigate({ to: "/orders" })}
               className="w-full rounded-xl bg-primary px-6 py-4 text-lg font-semibold text-primary-foreground hover:bg-primary/90 shadow-lg shadow-primary/25"
             >
-              View Order
+              {t("cart.viewOrder")}
             </button>
           </div>
         </div>
@@ -310,22 +351,20 @@ function CartPage() {
             <div className="rounded-full bg-red-100 p-4 w-24 h-24 mx-auto mb-6 flex items-center justify-center">
               <XCircle className="h-12 w-12 text-red-600" />
             </div>
-            <h1 className="text-3xl font-bold text-foreground mb-2">Payment Rejected</h1>
-            <p className="text-muted-foreground mb-6">
-              Your payment could not be verified. Please check your payment details and try again.
-            </p>
+            <h1 className="text-3xl font-bold text-foreground mb-2">{t("cart.rejectedTitle")}</h1>
+            <p className="text-muted-foreground mb-6">{t("cart.rejectedSubtitle")}</p>
             <div className="flex flex-col gap-3">
               <button
                 onClick={() => navigate({ to: "/" })}
                 className="w-full rounded-xl bg-primary px-6 py-4 text-lg font-semibold text-primary-foreground hover:bg-primary/90 shadow-lg shadow-primary/25"
               >
-                Retry Payment
+                {t("cart.retryPayment")}
               </button>
               <button
-                onClick={() => toast.info("Please contact a staff member for assistance.")}
+                onClick={() => toast.info(t("cart.contactStaffInfo"))}
                 className="w-full rounded-xl border border-border bg-background px-6 py-4 text-lg font-semibold text-foreground hover:bg-accent"
               >
-                Contact Staff
+                {t("cart.contactStaff")}
               </button>
             </div>
           </div>
@@ -334,6 +373,13 @@ function CartPage() {
     }
 
     // Still pending
+    const paymentMethodLabel =
+      selectedPaymentMethod === "cash"
+        ? t("cart.cash")
+        : selectedPaymentMethod === "telebirr"
+          ? t("cart.digitalWallet")
+          : t("cart.bankTransfer");
+
     return (
       <div className="min-h-screen bg-background">
         <SiteHeader restaurantId={cartRestaurantId} />
@@ -341,26 +387,25 @@ function CartPage() {
           <div className="rounded-full bg-amber-100 p-4 w-24 h-24 mx-auto mb-6 flex items-center justify-center">
             <Timer className="h-12 w-12 text-amber-600 animate-pulse" />
           </div>
-          <h1 className="text-3xl font-bold text-foreground mb-2">Payment Verification in Progress</h1>
-          <p className="text-muted-foreground mb-2">Reference number</p>
+          <h1 className="text-3xl font-bold text-foreground mb-2">{t("cart.verificationTitle")}</h1>
+          <p className="text-muted-foreground mb-2">{t("cart.referenceNumber")}</p>
           <p className="text-5xl font-bold text-primary mb-4">#{orderNumber}</p>
           <div className="rounded-xl border border-border bg-card p-4 mb-8 text-sm text-muted-foreground space-y-1">
             <p>
-              Payment:{' '}
-              <span className="font-semibold text-foreground">
-                {selectedPaymentMethod === 'cash' ? 'Cash' : selectedPaymentMethod === 'telebirr' ? 'Digital Wallet' : 'Bank Transfer'}
-              </span>
+              {t("cart.payment")}{" "}
+              <span className="font-semibold text-foreground">{paymentMethodLabel}</span>
             </p>
-            {selectedPaymentMethod !== 'cash' && (
+            {selectedPaymentMethod !== "cash" && (
               <p>
-                Transaction ID: <span className="font-semibold text-foreground">{transactionId}</span>
+                {t("cart.transactionId")}{" "}
+                <span className="font-semibold text-foreground">{transactionId}</span>
               </p>
             )}
-            <p>Please wait while the cashier verifies your payment. This page will update automatically.</p>
+            <p>{t("cart.waitingVerification")}</p>
           </div>
           <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
             <Loader2 className="h-4 w-4 animate-spin" />
-            Waiting for verification...
+            {t("cart.waiting")}
           </div>
         </div>
       </div>
@@ -370,27 +415,29 @@ function CartPage() {
   // =========================================================
   // STEP 2: PAYMENT DETAILS
   // =========================================================
-  if (step === 'payment-details') {
+  if (step === "payment-details") {
     return (
       <div className="min-h-screen bg-background">
         <SiteHeader restaurantId={cartRestaurantId} />
         <div className="mx-auto max-w-lg px-4 py-8">
           <button
-            onClick={() => setStep('payment-method')}
+            onClick={() => setStep("payment-method")}
             className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-6"
           >
             <ArrowLeft className="h-4 w-4" />
-            Back to payment method
+            {t("cart.backToPaymentMethod")}
           </button>
 
-          <h1 className="text-2xl font-bold text-foreground mb-6">Payment Details</h1>
+          <h1 className="text-2xl font-bold text-foreground mb-6">
+            {t("cart.paymentDetailsTitle")}
+          </h1>
 
           {/* Selected account info */}
-          {selectedPaymentMethod !== 'cash' && selectedAccount && (
+          {selectedPaymentMethod !== "cash" && selectedAccount && (
             <div className="rounded-xl border border-blue-200 bg-blue-50 p-5 mb-6">
               <div className="flex items-center gap-3 mb-3">
                 <div className="rounded-full bg-blue-100 p-2">
-                  {selectedPaymentMethod === 'telebirr' ? (
+                  {selectedPaymentMethod === "telebirr" ? (
                     <Smartphone className="h-5 w-5 text-blue-700" />
                   ) : (
                     <Building2 className="h-5 w-5 text-blue-700" />
@@ -398,29 +445,39 @@ function CartPage() {
                 </div>
                 <div>
                   <h3 className="font-semibold text-blue-800 text-sm">
-                    {selectedPaymentMethod === 'telebirr' ? 'Send to this Wallet' : 'Transfer to this Account'}
+                    {selectedPaymentMethod === "telebirr"
+                      ? t("cart.sendToWallet")
+                      : t("cart.transferToAccount")}
                   </h3>
-                  <p className="text-xs text-blue-600">
-                    Send the exact amount shown below
-                  </p>
+                  <p className="text-xs text-blue-600">{t("cart.sendExactAmount")}</p>
                 </div>
               </div>
               <div className="border-t border-blue-200 pt-3">
-                {selectedPaymentMethod === 'telebirr' ? (
+                {selectedPaymentMethod === "telebirr" ? (
                   <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-sm text-blue-700">
-                    <span className="text-blue-500">Provider</span>
-                    <span className="font-semibold text-blue-800 text-right">{selectedAccount.type}</span>
-                    <span className="text-blue-500">Account Name</span>
-                    <span className="font-semibold text-blue-800 text-right">{selectedAccount.account_name}</span>
-                    <span className="text-blue-500">Phone</span>
-                    <span className="font-mono font-bold text-blue-800 text-right text-base">{selectedAccount.phone}</span>
+                    <span className="text-blue-500">{t("cart.provider")}</span>
+                    <span className="font-semibold text-blue-800 text-right">
+                      {selectedAccount.type}
+                    </span>
+                    <span className="text-blue-500">{t("cart.accountName")}</span>
+                    <span className="font-semibold text-blue-800 text-right">
+                      {selectedAccount.account_name}
+                    </span>
+                    <span className="text-blue-500">{t("cart.phone")}</span>
+                    <span className="font-mono font-bold text-blue-800 text-right text-base">
+                      {selectedAccount.phone}
+                    </span>
                   </div>
                 ) : (
                   <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-sm text-blue-700">
-                    <span className="text-blue-500">Bank</span>
-                    <span className="font-semibold text-blue-800 text-right">{selectedAccount.bank_name}</span>
-                    <span className="text-blue-500">Account Holder</span>
-                    <span className="font-semibold text-blue-800 text-right">{selectedAccount.account_holder}</span>
+                    <span className="text-blue-500">{t("cart.bank")}</span>
+                    <span className="font-semibold text-blue-800 text-right">
+                      {selectedAccount.bank_name}
+                    </span>
+                    <span className="text-blue-500">{t("cart.accountHolder")}</span>
+                    <span className="font-semibold text-blue-800 text-right">
+                      {selectedAccount.account_holder}
+                    </span>
                   </div>
                 )}
               </div>
@@ -429,69 +486,88 @@ function CartPage() {
 
           <div className="space-y-5">
             <div>
-              <label className="block text-sm font-medium text-foreground mb-1.5">Your Name *</label>
+              <label className="block text-sm font-medium text-foreground mb-1.5">
+                {t("cart.yourName")}
+              </label>
               <input
                 type="text"
                 value={payerName}
                 onChange={(e) => setPayerName(e.target.value)}
                 className="w-full rounded-xl border border-input bg-background px-4 py-3 text-sm text-foreground focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring"
-                placeholder="Enter your full name"
+                placeholder={t("cart.namePlaceholder")}
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-foreground mb-1.5">Phone Number (Optional)</label>
+              <label className="block text-sm font-medium text-foreground mb-1.5">
+                {t("cart.phoneOptional")}
+              </label>
               <input
                 type="tel"
                 value={customerPhone}
                 onChange={(e) => setCustomerPhone(e.target.value)}
                 className="w-full rounded-xl border border-input bg-background px-4 py-3 text-sm text-foreground focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring"
-                placeholder="Enter your phone number"
+                placeholder={t("cart.phonePlaceholder")}
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-foreground mb-1.5">Payment Method</label>
+              <label className="block text-sm font-medium text-foreground mb-1.5">
+                {t("cart.paymentMethod")}
+              </label>
               <div className="w-full rounded-xl border border-input bg-muted px-4 py-3 text-sm">
-                {selectedPaymentMethod === 'cash' ? (
-                  <span className="text-muted-foreground">Cash</span>
-                ) : selectedPaymentMethod === 'telebirr' && selectedAccount ? (
+                {selectedPaymentMethod === "cash" ? (
+                  <span className="text-muted-foreground">{t("cart.cash")}</span>
+                ) : selectedPaymentMethod === "telebirr" && selectedAccount ? (
                   <div className="flex items-center justify-between text-foreground">
                     <span className="font-medium">{selectedAccount.type}</span>
                     <span className="font-mono text-xs">{selectedAccount.phone}</span>
                   </div>
-                ) : selectedPaymentMethod === 'bank_transfer' && selectedAccount ? (
+                ) : selectedPaymentMethod === "bank_transfer" && selectedAccount ? (
                   <div className="flex items-center justify-between text-foreground">
                     <span className="font-medium">{selectedAccount.bank_name}</span>
-                    <span className="text-xs text-muted-foreground">{selectedAccount.account_holder}</span>
+                    <span className="text-xs text-muted-foreground">
+                      {selectedAccount.account_holder}
+                    </span>
                   </div>
                 ) : (
                   <span className="text-muted-foreground">
-                    {selectedPaymentMethod === 'telebirr' ? 'Digital Wallet' : 'Bank Transfer'}
+                    {selectedPaymentMethod === "telebirr"
+                      ? t("cart.digitalWallet")
+                      : t("cart.bankTransfer")}
                   </span>
                 )}
               </div>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-foreground mb-1.5">Total Amount ({currency || 'ETB'})</label>
+              <label className="block text-sm font-medium text-foreground mb-1.5">
+                {t("cart.totalAmount", { currency: currency || "ETB" })}
+              </label>
               <div className="w-full rounded-xl border border-input bg-muted px-4 py-3 text-sm font-bold text-foreground">
                 {fmt(grandTotal, currency)}
               </div>
             </div>
 
-            {selectedPaymentMethod !== 'cash' && (
+            {selectedPaymentMethod !== "cash" && (
               <div>
-                <label className="block text-sm font-medium text-foreground mb-1.5">Transaction ID / Reference *</label>
+                <label className="block text-sm font-medium text-foreground mb-1.5">
+                  {t("cart.transactionIdLabel")}
+                </label>
                 <input
                   type="text"
                   value={transactionId}
                   onChange={(e) => setTransactionId(e.target.value)}
                   className="w-full rounded-xl border border-input bg-background px-4 py-3 text-sm text-foreground focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring"
-                  placeholder="Enter the transaction reference number"
+                  placeholder={t("cart.transactionIdPlaceholder")}
                 />
                 <p className="text-xs text-muted-foreground mt-1.5">
-                  Enter the reference number from your {selectedPaymentMethod === 'telebirr' ? 'wallet' : 'bank'} transfer
+                  {t("cart.transactionRefHint", {
+                    method:
+                      selectedPaymentMethod === "telebirr"
+                        ? t("cart.refWallet")
+                        : t("cart.refBank"),
+                  })}
                 </p>
               </div>
             )}
@@ -499,16 +575,16 @@ function CartPage() {
 
           <button
             onClick={handleConfirmOrder}
-            disabled={submitting || (selectedPaymentMethod !== 'cash' && !transactionId.trim())}
+            disabled={submitting || (selectedPaymentMethod !== "cash" && !transactionId.trim())}
             className="w-full rounded-xl bg-primary px-6 py-4 text-lg font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-primary/25 mt-8"
           >
             {submitting ? (
               <span className="flex items-center justify-center gap-2">
                 <Loader2 className="h-5 w-5 animate-spin" />
-                Processing...
+                {t("cart.processing")}
               </span>
             ) : (
-              'Place Order'
+              t("cart.placeOrder")
             )}
           </button>
         </div>
@@ -519,51 +595,66 @@ function CartPage() {
   // =========================================================
   // STEP 1: PAYMENT METHOD SELECTION
   // =========================================================
-  if (step === 'payment-method') {
+  if (step === "payment-method") {
     const methodOptions = [
-      { id: 'cash', label: 'Cash', icon: Banknote, desc: 'Pay at the counter' },
-      { id: 'telebirr', label: 'Digital Wallet', icon: Smartphone, desc: 'Telebirr, M-Pesa, eBirr & more' },
-      { id: 'bank_transfer', label: 'Bank Transfer', icon: Building2, desc: 'Direct deposit to our account' },
+      { id: "cash", label: t("cart.cash"), icon: Banknote, desc: t("cart.payAtCounter") },
+      {
+        id: "telebirr",
+        label: t("cart.digitalWallet"),
+        icon: Smartphone,
+        desc: t("cart.walletDesc"),
+      },
+      {
+        id: "bank_transfer",
+        label: t("cart.bankTransfer"),
+        icon: Building2,
+        desc: t("cart.bankDesc"),
+      },
     ];
-    const selectedMethod = methodOptions.find(m => m.id === selectedPaymentMethod);
+    const selectedMethod = methodOptions.find((m) => m.id === selectedPaymentMethod);
     const Icon = selectedMethod?.icon;
     const wallets = paymentDetails?.wallets || [];
     const banks = paymentDetails?.banks || [];
-    const showAccounts = selectedPaymentMethod === 'telebirr' || selectedPaymentMethod === 'bank_transfer';
+    const showAccounts =
+      selectedPaymentMethod === "telebirr" || selectedPaymentMethod === "bank_transfer";
 
     return (
       <div className="min-h-screen bg-background">
         <SiteHeader restaurantId={cartRestaurantId} />
         <div className="mx-auto max-w-lg px-4 py-12">
           <button
-            onClick={() => setStep('checkout')}
+            onClick={() => setStep("checkout")}
             className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-8"
           >
             <ArrowLeft className="h-4 w-4" />
-            Back to cart
+            {t("cart.backToCart")}
           </button>
 
           <div className="mb-8">
-            <h1 className="text-2xl font-bold text-foreground mb-1">Choose Payment Method</h1>
-            <p className="text-muted-foreground text-sm">Select how you'd like to pay</p>
+            <h1 className="text-2xl font-bold text-foreground mb-1">
+              {t("cart.choosePaymentMethod")}
+            </h1>
+            <p className="text-muted-foreground text-sm">{t("cart.selectHowToPay")}</p>
           </div>
 
           <div className="space-y-6">
             {/* Payment method select */}
             <div className="space-y-2">
-              <Label className="text-sm font-medium text-foreground">Payment Method</Label>
+              <Label className="text-sm font-medium text-foreground">
+                {t("cart.paymentMethod")}
+              </Label>
               <Select
                 value={selectedPaymentMethod}
                 onValueChange={(v) => {
                   setSelectedPaymentMethod(v);
                   setSelectedAccount(null);
-                  setTransactionId('');
+                  setTransactionId("");
                 }}
               >
                 <SelectTrigger className="h-12 px-4 text-base">
                   <div className="flex items-center gap-3">
                     {Icon && <Icon className="h-5 w-5 text-muted-foreground" />}
-                    <SelectValue placeholder="Select payment method" />
+                    <SelectValue placeholder={t("cart.selectPaymentMethod")} />
                   </div>
                 </SelectTrigger>
                 <SelectContent>
@@ -589,17 +680,19 @@ function CartPage() {
             {showAccounts && (
               <div className="space-y-2">
                 <Label className="text-sm font-medium text-foreground">
-                  {selectedPaymentMethod === 'telebirr' ? 'Wallet Account' : 'Bank Account'}
+                  {selectedPaymentMethod === "telebirr"
+                    ? t("cart.walletAccount")
+                    : t("cart.bankAccount")}
                 </Label>
-                {selectedPaymentMethod === 'telebirr' && wallets.length > 0 ? (
+                {selectedPaymentMethod === "telebirr" && wallets.length > 0 ? (
                   <Select
-                    value={selectedAccount ? JSON.stringify(selectedAccount) : ''}
+                    value={selectedAccount ? JSON.stringify(selectedAccount) : ""}
                     onValueChange={(v) => setSelectedAccount(JSON.parse(v))}
                   >
                     <SelectTrigger className="h-12 px-4 text-base">
                       <div className="flex items-center gap-3">
                         <Wallet className="h-5 w-5 text-muted-foreground shrink-0" />
-                        <SelectValue placeholder="Choose a wallet" />
+                        <SelectValue placeholder={t("cart.chooseWallet")} />
                       </div>
                     </SelectTrigger>
                     <SelectContent>
@@ -610,21 +703,23 @@ function CartPage() {
                               <Smartphone className="h-4 w-4 text-muted-foreground shrink-0" />
                               <p className="text-sm font-medium">{w.type}</p>
                             </div>
-                            <p className="text-xs text-muted-foreground pl-6">{w.account_name} — {w.phone}</p>
+                            <p className="text-xs text-muted-foreground pl-6">
+                              {w.account_name} — {w.phone}
+                            </p>
                           </div>
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
-                ) : selectedPaymentMethod === 'bank_transfer' && banks.length > 0 ? (
+                ) : selectedPaymentMethod === "bank_transfer" && banks.length > 0 ? (
                   <Select
-                    value={selectedAccount ? JSON.stringify(selectedAccount) : ''}
+                    value={selectedAccount ? JSON.stringify(selectedAccount) : ""}
                     onValueChange={(v) => setSelectedAccount(JSON.parse(v))}
                   >
                     <SelectTrigger className="h-12 px-4 text-base">
                       <div className="flex items-center gap-3">
                         <Landmark className="h-5 w-5 text-muted-foreground shrink-0" />
-                        <SelectValue placeholder="Choose a bank account" />
+                        <SelectValue placeholder={t("cart.chooseBankAccount")} />
                       </div>
                     </SelectTrigger>
                     <SelectContent>
@@ -635,7 +730,9 @@ function CartPage() {
                               <Building2 className="h-4 w-4 text-muted-foreground shrink-0" />
                               <p className="text-sm font-medium">{b.bank_name}</p>
                             </div>
-                            <p className="text-xs text-muted-foreground pl-6">{b.account_holder} — {b.account_number}</p>
+                            <p className="text-xs text-muted-foreground pl-6">
+                              {b.account_holder} — {b.account_number}
+                            </p>
                           </div>
                         </SelectItem>
                       ))}
@@ -643,14 +740,14 @@ function CartPage() {
                   </Select>
                 ) : (
                   <div className="rounded-lg border border-dashed border-muted-foreground/30 p-4 text-center text-sm text-muted-foreground">
-                    No accounts configured. Please contact the restaurant.
+                    {t("cart.noAccounts")}
                   </div>
                 )}
 
                 {/* Show selected account details */}
                 {selectedAccount && (
                   <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 mt-2">
-                    {selectedPaymentMethod === 'telebirr' ? (
+                    {selectedPaymentMethod === "telebirr" ? (
                       <div className="text-sm text-blue-700 space-y-0.5">
                         <p className="font-semibold text-blue-800">{selectedAccount.type}</p>
                         <p>Name: {selectedAccount.account_name}</p>
@@ -669,11 +766,11 @@ function CartPage() {
             )}
 
             <button
-              onClick={() => setStep('payment-details')}
-              disabled={selectedPaymentMethod === 'cash' ? false : !selectedAccount}
+              onClick={() => setStep("payment-details")}
+              disabled={selectedPaymentMethod === "cash" ? false : !selectedAccount}
               className="w-full rounded-xl bg-primary px-6 py-4 text-lg font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-primary/25"
             >
-              Continue
+              {t("cart.continue")}
             </button>
           </div>
         </div>
@@ -696,27 +793,29 @@ function CartPage() {
             className="inline-flex items-center gap-2 rounded-lg border border-border bg-background px-4 py-2 text-sm font-semibold text-foreground hover:bg-accent"
           >
             <ArrowLeft className="h-4 w-4" />
-            Back to Menu
+            {t("cart.backToMenu")}
           </button>
-          <h1 className="font-serif text-3xl font-bold text-foreground flex-1">Checkout</h1>
+          <h1 className="font-serif text-3xl font-bold text-foreground flex-1">
+            {t("cart.checkout")}
+          </h1>
         </div>
 
         {/* Session Info */}
         {sessionData && sessionData.table_number && (
           <div className="rounded-xl border border-border bg-card p-6 mb-4">
-            <h2 className="font-semibold text-lg text-foreground mb-4">Dining Information</h2>
+            <h2 className="font-semibold text-lg text-foreground mb-4">{t("cart.diningInfo")}</h2>
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2 text-muted-foreground">
                   <TableIcon className="h-4 w-4" />
-                  <span className="text-sm">Table</span>
+                  <span className="text-sm">{t("cart.table")}</span>
                 </div>
                 <span className="font-semibold text-foreground">{sessionData.table_number}</span>
               </div>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2 text-muted-foreground">
                   <User className="h-4 w-4" />
-                  <span className="text-sm">Customer</span>
+                  <span className="text-sm">{t("cart.customer")}</span>
                 </div>
                 <span className="font-semibold text-foreground">{sessionData.customer_name}</span>
               </div>
@@ -724,7 +823,7 @@ function CartPage() {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2 text-muted-foreground">
                     <MapPin className="h-4 w-4" />
-                    <span className="text-sm">Location</span>
+                    <span className="text-sm">{t("cart.location")}</span>
                   </div>
                   <span className="font-semibold text-foreground">{sessionData.location}</span>
                 </div>
@@ -736,17 +835,27 @@ function CartPage() {
         {/* Order Summary */}
         <div className="rounded-xl border border-border bg-card p-6 mb-4">
           <h2 className="font-semibold text-lg text-foreground mb-4">
-            Order Summary ({count} {count === 1 ? 'item' : 'items'})
+            {t("cart.orderSummary", {
+              count,
+              items: count === 1 ? t("cart.item") : t("cart.items"),
+            })}
           </h2>
           <div className="space-y-3">
             {items.map((item) => (
-              <div key={item.id} className="rounded-lg border border-border bg-background p-3 sm:p-4 hover:shadow-md transition-shadow">
+              <div
+                key={item.id}
+                className="rounded-lg border border-border bg-background p-3 sm:p-4 hover:shadow-md transition-shadow"
+              >
                 <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
                   {/* Item Info */}
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold text-foreground text-sm sm:text-base">{item.name}</h3>
-                    <p className="text-sm text-muted-foreground mt-1">{fmt(item.price, currency)} each</p>
-                    
+                    <h3 className="font-semibold text-foreground text-sm sm:text-base">
+                      {item.name}
+                    </h3>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      {fmt(item.price, currency)} {t("cart.each")}
+                    </p>
+
                     {/* Variants */}
                     {item.selectedVariants && item.selectedVariants.length > 0 && (
                       <div className="flex flex-wrap gap-1 mt-2">
@@ -760,19 +869,21 @@ function CartPage() {
                         ))}
                       </div>
                     )}
-                    
+
                     {/* Special Instructions */}
                     {item.specialInstructions && (
                       <p className="text-xs italic text-muted-foreground mt-2 bg-muted px-2 py-1 rounded">
-                        Note: {item.specialInstructions}
+                        {t("cart.note", { instructions: item.specialInstructions })}
                       </p>
                     )}
                   </div>
 
                   {/* Price and Controls */}
                   <div className="flex flex-row sm:flex-col items-center sm:items-end justify-between sm:justify-between gap-3 sm:gap-0">
-                    <p className="font-serif text-lg font-semibold text-foreground">{fmt(item.itemTotal, currency)}</p>
-                    
+                    <p className="font-serif text-lg font-semibold text-foreground">
+                      {fmt(item.itemTotal, currency)}
+                    </p>
+
                     {/* Quantity Controls */}
                     <div className="flex items-center gap-2">
                       <button
@@ -781,32 +892,32 @@ function CartPage() {
                             updateQuantity(item.id, item.quantity - 1);
                           } else {
                             remove(item.id);
-                            toast.success("Item removed from cart");
+                            toast.success(t("cart.itemRemoved"));
                           }
                         }}
                         className="flex items-center justify-center rounded-full border border-border bg-background h-9 w-9 hover:bg-accent hover:text-accent-foreground transition-colors"
-                        aria-label="Decrease quantity"
+                        aria-label={t("cart.decreaseQty")}
                       >
                         <Minus className="h-4 w-4" />
                       </button>
-                      
+
                       <span className="w-8 text-center text-sm font-semibold">{item.quantity}</span>
-                      
+
                       <button
                         onClick={() => updateQuantity(item.id, item.quantity + 1)}
                         className="flex items-center justify-center rounded-full border border-border bg-background h-9 w-9 hover:bg-accent hover:text-accent-foreground transition-colors"
-                        aria-label="Increase quantity"
+                        aria-label={t("cart.increaseQty")}
                       >
                         <Plus className="h-4 w-4" />
                       </button>
-                      
+
                       <button
                         onClick={() => {
                           remove(item.id);
-                          toast.success("Item removed from cart");
+                          toast.success(t("cart.itemRemoved"));
                         }}
                         className="flex items-center justify-center rounded-full border border-destructive/20 bg-destructive/10 h-9 w-9 text-destructive hover:bg-destructive hover:text-destructive-foreground transition-colors"
-                        aria-label="Remove item"
+                        aria-label={t("cart.removeItem")}
                       >
                         <Trash2 className="h-4 w-4" />
                       </button>
@@ -821,36 +932,38 @@ function CartPage() {
         {/* Order Instructions */}
         <div className="rounded-xl border border-border bg-card p-6 mb-4">
           <h2 className="font-semibold text-lg text-foreground mb-3">
-            Special Instructions (Optional)
+            {t("cart.specialInstructions")}
           </h2>
           <textarea
             value={orderInstructions}
             onChange={(e) => setOrderInstructions(e.target.value)}
             rows={3}
             className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring resize-none"
-            placeholder="Any special requests for your order? (e.g., allergies, preferences)"
+            placeholder={t("cart.specialInstructionsPlaceholder")}
           />
         </div>
 
         {/* Price Breakdown */}
         <div className="rounded-xl border border-border bg-card p-6 mb-4">
-          <h2 className="font-semibold text-lg text-foreground mb-4">Payment Summary</h2>
+          <h2 className="font-semibold text-lg text-foreground mb-4">{t("cart.paymentSummary")}</h2>
           <div className="space-y-3">
             <div className="flex justify-between">
-              <span className="text-foreground">Subtotal</span>
+              <span className="text-foreground">{t("cart.subtotal")}</span>
               <span className="font-semibold">{fmt(subtotal, currency)}</span>
             </div>
             <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Tax ({taxRate}%)</span>
+              <span className="text-muted-foreground">{t("cart.tax", { rate: taxRate })}</span>
               <span className="text-muted-foreground">{fmt(tax, currency)}</span>
             </div>
             <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Service Charge ({serviceChargeRate}%)</span>
+              <span className="text-muted-foreground">
+                {t("cart.serviceCharge", { rate: serviceChargeRate })}
+              </span>
               <span className="text-muted-foreground">{fmt(serviceCharge, currency)}</span>
             </div>
             <div className="border-t border-border pt-3">
               <div className="flex justify-between">
-                <span className="text-xl font-bold text-foreground">Total</span>
+                <span className="text-xl font-bold text-foreground">{t("cart.total")}</span>
                 <span className="text-xl font-bold text-primary">{fmt(grandTotal, currency)}</span>
               </div>
             </div>
@@ -866,17 +979,13 @@ function CartPage() {
           {submitting ? (
             <span className="flex items-center justify-center gap-2">
               <Loader2 className="h-5 w-5 animate-spin" />
-              Processing...
+              {t("cart.processing")}
             </span>
           ) : (
-            "Place Order"
+            t("cart.placeOrder")
           )}
         </button>
-        
-
       </div>
     </div>
   );
 }
-
-
